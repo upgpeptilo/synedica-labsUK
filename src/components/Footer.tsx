@@ -8,14 +8,11 @@ const linkColumns = [
   { href: "/privacy-policy", label: "Privacy Policy" },
 ];
 
-// ponytail: this route isn't built yet, shown as plain text for visual parity until it exists
-const plannedLinks = ["Wholesale"];
-
 export default function Footer() {
   return (
     <footer className="bg-dark text-white/90">
       <div className="mx-auto max-w-6xl px-4 py-12">
-        <div className="grid gap-8 sm:grid-cols-3">
+        <div className="grid gap-8 sm:grid-cols-2">
           <nav className="flex flex-col gap-2 text-sm">
             {linkColumns.map((link) => (
               <Link key={link.href} href={link.href} className="hover:text-white">
@@ -23,11 +20,6 @@ export default function Footer() {
               </Link>
             ))}
           </nav>
-          <ul className="flex flex-col gap-2 text-sm text-white/70">
-            {plannedLinks.map((label) => (
-              <li key={label}>{label}</li>
-            ))}
-          </ul>
           <div>
             <h3 className="font-semibold text-white">Newsletter</h3>
             <p className="mt-1 text-sm text-white/70">Join our newsletter for new offers.</p>

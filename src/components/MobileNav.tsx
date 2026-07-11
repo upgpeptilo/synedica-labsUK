@@ -8,7 +8,6 @@ const navLinks = [
   { href: "/contact", label: "Contact" },
   { href: "/how-to-pay", label: "How to Pay" },
   { href: "/privacy-policy", label: "Privacy Policy" },
-  { href: "/wholesale", label: "Wholesale" },
 ];
 
 export default function MobileNav() {
