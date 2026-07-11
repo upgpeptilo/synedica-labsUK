@@ -4,10 +4,12 @@ const linkColumns = [
   { href: "/products", label: "Products" },
   { href: "/account", label: "My Account" },
   { href: "/contact", label: "Contact" },
+  { href: "/how-to-pay", label: "How to Pay" },
+  { href: "/privacy-policy", label: "Privacy Policy" },
 ];
 
-// ponytail: these routes aren't built yet, shown as plain text for visual parity until they exist
-const plannedLinks = ["How to Pay", "Privacy Policy", "Wholesale"];
+// ponytail: this route isn't built yet, shown as plain text for visual parity until it exists
+const plannedLinks = ["Wholesale"];
 
 export default function Footer() {
   return (

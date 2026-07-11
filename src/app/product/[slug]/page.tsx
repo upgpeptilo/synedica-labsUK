@@ -2,7 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProduct, storageText, disclaimerText } from "@/lib/products";
+import { getGbpRates } from "@/lib/currency";
 import ProductActions from "@/components/ProductActions";
+import RecordRecentlyViewed from "@/components/RecordRecentlyViewed";
 
 export default async function ProductPage({
   params,
@@ -10,11 +12,14 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = await getProduct(slug);
+  const [product, rates] = await Promise.all([getProduct(slug), getGbpRates()]);
   if (!product) notFound();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-16">
+      <RecordRecentlyViewed
+        item={{ slug: product.slug, title: product.title, price: product.price, image: product.image300 }}
+      />
       <p className="text-xs text-neutral-500">
         <Link href="/" className="hover:text-primary">Home</Link> /{" "}
         <Link href="/products" className="hover:text-primary">Shop</Link> / {product.title}
@@ -31,7 +36,7 @@ export default async function ProductPage({
           <h1 className="font-heading text-3xl font-bold text-dark">{product.title}</h1>
           <p className="mt-2 text-xl font-semibold text-primary-dark">{product.price}</p>
 
-          <ProductActions product={product} />
+          <ProductActions product={product} rates={rates} />
 
           <div className="mt-10 space-y-2 border-t border-neutral-200 pt-6">
             {product.specs.map((spec) => (

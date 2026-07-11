@@ -49,15 +49,16 @@ function readProductFields(formData: FormData) {
   const price = String(formData.get("price") ?? "").trim();
   const sizes = parseSizes(String(formData.get("sizes") ?? ""));
   const form = String(formData.get("form") ?? "Lyophilized Powder").trim();
+  const category = String(formData.get("category") ?? "Uncategorized").trim();
   const bestSeller = formData.get("bestSeller") === "on";
   const specs = buildSpecs(formData);
   const imageUrl = String(formData.get("imageUrl") ?? "").trim();
 
-  return { title, price, sizes, form, bestSeller, specs, imageUrl };
+  return { title, price, sizes, form, category, bestSeller, specs, imageUrl };
 }
 
 export async function createProduct(formData: FormData) {
-  const { title, price, sizes, form, bestSeller, specs, imageUrl } = readProductFields(formData);
+  const { title, price, sizes, form, category, bestSeller, specs, imageUrl } = readProductFields(formData);
   const supabase = await createClient();
 
   const { error } = await supabase.from("products").insert({
@@ -66,6 +67,7 @@ export async function createProduct(formData: FormData) {
     price,
     sizes,
     form,
+    category,
     best_seller: bestSeller,
     specs,
     image300: imageUrl,
@@ -81,7 +83,7 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(id: string, formData: FormData) {
-  const { title, price, sizes, form, bestSeller, specs, imageUrl } = readProductFields(formData);
+  const { title, price, sizes, form, category, bestSeller, specs, imageUrl } = readProductFields(formData);
   const supabase = await createClient();
 
   const update: Record<string, unknown> = {
@@ -89,6 +91,7 @@ export async function updateProduct(id: string, formData: FormData) {
     price,
     sizes,
     form,
+    category,
     best_seller: bestSeller,
     specs,
   };

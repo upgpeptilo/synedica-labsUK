@@ -3,22 +3,58 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useCart, type CartItem } from "@/lib/cart";
 import { createClient } from "@/lib/supabase/client";
 import { firstGbpAmount, formatGbpAmount, getGbpRates, type GbpRates } from "@/lib/currency";
+import AddressFields from "@/components/AddressFields";
+import { PAYMENT_METHODS, BANK_OPTIONS, OTHER_BANK_ID } from "@/lib/paymentMethods";
+
+const WHATSAPP_URL = "https://wa.me/447853104088";
+
+const inputClass =
+  "mt-1.5 w-full rounded-lg border border-neutral-300 px-3 py-2.5 focus:border-primary focus:outline-none";
+
+function Breadcrumb({ step }: { step: "details" | "complete" }) {
+  const steps = [
+    { key: "cart", label: "Shopping Cart" },
+    { key: "details", label: "Checkout Details" },
+    { key: "complete", label: "Order Complete" },
+  ];
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-3 text-sm font-semibold uppercase tracking-wide text-neutral-400 sm:text-base">
+      {steps.map((s, i) => (
+        <span key={s.key} className="flex items-center gap-3">
+          {i > 0 && <span className="text-neutral-300">›</span>}
+          <span className={s.key === step ? "text-dark" : ""}>{s.label}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function CheckoutContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const buySlug = searchParams.get("buy");
   const buySize = searchParams.get("size") ?? "";
-  const { items: cartItems, removeItem, clear } = useCart();
+  const { items: cartItems, clear } = useCart();
 
-  const [buyNowItem, setBuyNowItem] = useState<CartItem | null>(null);
+  const [buyNowRow, setBuyNowRow] = useState<{ slug: string; title: string; price: string; image300: string } | null>(null);
   const [loading, setLoading] = useState(!!buySlug);
   const [rates, setRates] = useState<GbpRates | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0].id);
+  const [bankOption, setBankOption] = useState("");
+  const [bankName, setBankName] = useState("");
+
+  function paymentSummary() {
+    if (paymentMethod === "bank") {
+      const bank = BANK_OPTIONS.find((b) => b.id === bankOption);
+      if (!bank) return "Bank";
+      return bank.id === OTHER_BANK_ID ? `Bank — ${bankName || "Other Bank"}` : `Bank — ${bank.label}`;
+    }
+    return PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label ?? paymentMethod;
+  }
 
   useEffect(() => {
     getGbpRates().then(setRates);
@@ -33,25 +69,59 @@ function CheckoutContent() {
       .eq("slug", buySlug)
       .maybeSingle()
       .then(({ data }) => {
-        if (data) {
-          setBuyNowItem({
-            slug: data.slug,
-            title: data.title,
-            image: data.image300,
-            priceGbp: firstGbpAmount(data.price),
-            size: buySize,
-            qty: 1,
-          });
-        }
+        setBuyNowRow(data ?? null);
         setLoading(false);
       });
-  }, [buySlug, buySize]);
+  }, [buySlug]);
+
+  const buyNowItem: CartItem | null =
+    buyNowRow && rates
+      ? {
+          slug: buyNowRow.slug,
+          title: buyNowRow.title,
+          image: buyNowRow.image300,
+          priceGbp: firstGbpAmount(buyNowRow.price, rates),
+          size: buySize,
+          qty: 1,
+        }
+      : null;
 
   const items = buySlug ? (buyNowItem ? [buyNowItem] : []) : cartItems;
   const subtotal = items.reduce((sum, i) => sum + i.priceGbp * i.qty, 0);
+  const fmt = (n: number) => (rates ? formatGbpAmount(n, rates) : `£${n.toFixed(2)}`);
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const get = (key: string) => String(data.get(key) ?? "").trim();
+
+    const address = [
+      [get("billingStreet1"), get("billingStreet2")].filter(Boolean).join(", "),
+      get("billingCity"),
+      [get("billingState"), get("billingZip")].filter(Boolean).join(" "),
+      get("billingCountry"),
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const message = [
+      "New order from Synedica UK website:",
+      "",
+      `Name: ${get("billingFirstName")} ${get("billingLastName")}`,
+      `Email: ${get("email")}`,
+      get("phone") && `Phone: ${get("phone")}`,
+      `Address: ${address}`,
+      "",
+      "Items:",
+      ...items.map((i) => `- ${i.title}${i.size ? ` (${i.size})` : ""} x${i.qty} — ${fmt(i.priceGbp * i.qty)}`),
+      `Total: ${fmt(subtotal)}`,
+      `Payment method: ${paymentSummary()}`,
+      get("notes") && `Notes: ${get("notes")}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    window.open(`${WHATSAPP_URL}?text=${encodeURIComponent(message)}`, "_blank");
     setSubmitted(true);
     if (!buySlug) clear();
   }
@@ -59,18 +129,23 @@ function CheckoutContent() {
   if (submitted) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-primary-dark">Order Received</h1>
+        <Breadcrumb step="complete" />
+        <h1 className="mt-8 text-2xl font-bold text-primary-dark">Order Received</h1>
         <p className="mt-3 text-neutral-600">
-          Thanks for your order. We&apos;ll be in touch by email to confirm payment and shipping details.
+          We&apos;ve opened WhatsApp with your order details — hit send there to confirm with our team.
         </p>
-        <Link href="/products" className="mt-6 inline-block rounded bg-primary px-5 py-2.5 font-semibold text-white hover:bg-primary-dark">
+        <p className="mt-2 text-sm text-neutral-500">
+          Payment method: {paymentSummary()} — see{" "}
+          <Link href="/how-to-pay" className="underline hover:text-primary">How to Pay</Link> for next steps.
+        </p>
+        <Link href="/products" className="mt-6 inline-block rounded bg-dark px-5 py-2.5 font-semibold text-white hover:bg-neutral-800">
           Continue Shopping
         </Link>
       </div>
     );
   }
 
-  if (loading) {
+  if (loading || (buySlug && !rates)) {
     return <div className="mx-auto max-w-2xl px-4 py-16 text-center text-neutral-500">Loading…</div>;
   }
 
@@ -87,56 +162,143 @@ function CheckoutContent() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-16">
-      <h1 className="text-2xl font-bold text-primary-dark">Checkout</h1>
+    <div className="mx-auto max-w-6xl px-4 py-16">
+      <Breadcrumb step="details" />
 
-      <div className="mt-6 divide-y divide-neutral-200 rounded-lg border border-neutral-200 bg-white">
-        {items.map((item) => (
-          <div key={`${item.slug}-${item.size}`} className="flex items-center gap-4 p-4">
-            <Image src={item.image} alt={item.title} width={56} height={56} className="rounded border border-neutral-200 object-contain" />
-            <div className="flex-1">
-              <p className="font-semibold text-neutral-900">{item.title}</p>
-              <p className="text-sm text-neutral-500">
-                {item.size && `Size: ${item.size} · `}Qty: {item.qty}
-              </p>
-            </div>
-            <p className="text-sm font-semibold text-neutral-700">
-              {rates ? formatGbpAmount(item.priceGbp * item.qty, rates) : `£${(item.priceGbp * item.qty).toFixed(2)}`}
-            </p>
-            <button
-              type="button"
-              onClick={() => (buySlug ? router.push("/products") : removeItem(item.slug, item.size))}
-              className="text-sm text-red-600 underline"
-            >
-              Cancel
-            </button>
+      <form onSubmit={handleSubmit} className="mt-10 grid gap-8 lg:grid-cols-[1fr_380px]">
+        <div>
+          <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-dark">Billing Details</h2>
+          <div className="mt-4">
+            <AddressFields idPrefix="billing" fieldPrefix="billing" />
           </div>
-        ))}
-      </div>
 
-      <div className="mt-4 flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-4">
-        <p className="font-semibold text-neutral-900">Total</p>
-        <p className="font-semibold text-primary-dark">{rates ? formatGbpAmount(subtotal, rates) : `£${subtotal.toFixed(2)}`}</p>
-      </div>
+          <div className="mt-4">
+            <label className="text-sm font-medium text-neutral-700" htmlFor="phone">Phone (optional)</label>
+            <input id="phone" name="phone" type="tel" className={inputClass} />
+          </div>
+          <div className="mt-4">
+            <label className="text-sm font-medium text-neutral-700" htmlFor="email">Email address *</label>
+            <input id="email" name="email" type="email" required className={inputClass} />
+          </div>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4 rounded-lg border border-neutral-200 bg-white p-6">
-        <h2 className="font-semibold text-neutral-900">Your Details</h2>
-        <div>
-          <label className="text-sm font-medium text-neutral-700" htmlFor="name">Full Name</label>
-          <input id="name" name="name" type="text" required className="mt-1.5 w-full rounded-lg border border-neutral-300 px-3 py-2.5 focus:border-primary focus:outline-none" />
+          <div className="mt-4">
+            <label className="text-sm font-medium text-neutral-700" htmlFor="notes">Order notes (optional)</label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows={3}
+              placeholder="Notes about your order, e.g. special notes for delivery."
+              className={inputClass}
+            />
+          </div>
         </div>
-        <div>
-          <label className="text-sm font-medium text-neutral-700" htmlFor="email">Email</label>
-          <input id="email" name="email" type="email" required className="mt-1.5 w-full rounded-lg border border-neutral-300 px-3 py-2.5 focus:border-primary focus:outline-none" />
+
+        <div className="h-fit rounded-lg border-2 border-primary bg-white p-5">
+          <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-dark">Your Order</h2>
+
+          <div className="mt-4 border-b border-neutral-200 pb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+            <div className="flex justify-between">
+              <span>Product</span>
+              <span>Subtotal</span>
+            </div>
+          </div>
+          <div className="divide-y divide-neutral-100">
+            {items.map((item) => (
+              <div key={`${item.slug}-${item.size}`} className="flex items-center gap-3 py-3 text-sm">
+                <Image src={item.image} alt={item.title} width={40} height={40} className="rounded border border-neutral-200 object-contain" />
+                <span className="flex-1 text-neutral-700">
+                  {item.title}
+                  {item.size && ` (${item.size})`} × {item.qty}
+                </span>
+                <span className="font-semibold text-neutral-900">{fmt(item.priceGbp * item.qty)}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-2 border-t border-neutral-200 pt-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-neutral-600">Subtotal</span>
+              <span className="font-semibold text-neutral-900">{fmt(subtotal)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-neutral-600">Shipment</span>
+              <span className="text-neutral-700">Free shipping [3 – 10 Days]</span>
+            </div>
+            <div className="flex justify-between border-t border-neutral-200 pt-2 text-base">
+              <span className="font-semibold text-dark">Total</span>
+              <span className="font-semibold text-primary-dark">{fmt(subtotal)}</span>
+            </div>
+          </div>
+
+          <fieldset className="mt-5 border-t border-neutral-200 pt-4">
+            <legend className="text-sm font-semibold uppercase tracking-wide text-dark">Payment Method</legend>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {PAYMENT_METHODS.map((m) => (
+                <label
+                  key={m.id}
+                  className="flex flex-col items-center gap-1 rounded-lg border border-neutral-300 p-2 text-center has-checked:border-primary has-checked:bg-primary-light"
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value={m.id}
+                    checked={paymentMethod === m.id}
+                    onChange={() => setPaymentMethod(m.id)}
+                    className="sr-only"
+                  />
+                  <Image src={m.image} alt={m.label} width={32} height={32} className="h-8 w-8 object-contain" />
+                  <span className="text-[11px] leading-tight text-neutral-700">{m.label}</span>
+                </label>
+              ))}
+            </div>
+
+            {paymentMethod === "bank" && (
+              <div className="mt-4 border-t border-neutral-200 pt-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Choose your bank</p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {BANK_OPTIONS.map((b) => (
+                    <label
+                      key={b.id}
+                      className="flex flex-col items-center gap-1 rounded-lg border border-neutral-300 p-2 text-center has-checked:border-primary has-checked:bg-primary-light"
+                    >
+                      <input
+                        type="radio"
+                        name="bankOption"
+                        value={b.id}
+                        checked={bankOption === b.id}
+                        onChange={() => setBankOption(b.id)}
+                        className="sr-only"
+                      />
+                      <Image src={b.image} alt={b.label} width={32} height={32} className="h-8 w-8 object-contain" />
+                      <span className="text-[11px] leading-tight text-neutral-700">{b.label}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {bankOption === OTHER_BANK_ID && (
+                  <input
+                    type="text"
+                    name="bankName"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="Enter your bank name"
+                    className={`${inputClass} mt-3`}
+                  />
+                )}
+              </div>
+            )}
+          </fieldset>
+
+          <button type="submit" className="mt-5 w-full rounded bg-dark py-3 font-semibold text-white hover:bg-neutral-800">
+            Place Order
+          </button>
+
+          <p className="mt-3 text-xs text-neutral-500">
+            Your personal data will be used to process your order, support your experience throughout
+            this website, and for other purposes described in our{" "}
+            <Link href="/privacy-policy" className="underline hover:text-primary">privacy policy</Link>.
+          </p>
         </div>
-        <div>
-          <label className="text-sm font-medium text-neutral-700" htmlFor="address">Shipping Address</label>
-          <textarea id="address" name="address" required rows={3} className="mt-1.5 w-full rounded-lg border border-neutral-300 px-3 py-2.5 focus:border-primary focus:outline-none" />
-        </div>
-        <p className="text-xs text-neutral-500">Payment isn&apos;t collected here yet — we&apos;ll follow up by email to arrange it.</p>
-        <button type="submit" className="w-full rounded bg-dark py-3 font-semibold text-white hover:bg-neutral-800">
-          Place Order
-        </button>
       </form>
     </div>
   );

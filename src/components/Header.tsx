@@ -4,7 +4,6 @@ import MobileNav from "./MobileNav";
 
 const navLinks = [
   { href: "/products", label: "Products" },
-  { href: "/account", label: "My Account" },
   { href: "/contact", label: "Contact" },
   { href: "/how-to-pay", label: "How to Pay" },
   { href: "/privacy-policy", label: "Privacy Policy" },
@@ -54,12 +53,6 @@ export default function Header() {
           </form>
 
           <div className="relative z-10 flex items-center gap-3 text-dark sm:gap-4">
-            <Link href="/account" aria-label="Account">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-7 w-7 sm:h-6 sm:w-6">
-                <circle cx="12" cy="8" r="3.2" />
-                <path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4" strokeLinecap="round" />
-              </svg>
-            </Link>
             <Link href="/basket" aria-label="Basket">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-7 w-7 sm:h-6 sm:w-6">
                 <path d="M6 6h15l-1.5 9h-12z" strokeLinecap="round" strokeLinejoin="round" />

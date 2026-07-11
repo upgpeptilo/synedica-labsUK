@@ -4,8 +4,13 @@ import { useState } from "react";
 import ImageUploader from "./ImageUploader";
 import type { Product, ProductSpec } from "@/lib/products";
 import { withOtherCurrencies, type GbpRates } from "@/lib/currency";
+import { PEPTIDE_TEMPLATES } from "@/lib/peptideTemplates";
 
 const KNOWN_SPECS = ["CAS Number", "Molecular Formula", "Molecular Weight", "Purity", "Peptide Sequence"];
+const CATEGORIES = ["Anabolic", "Cosmetic", "Recovery", "Weight Loss", "Uncategorized"];
+const FORMS = ["Injection Pen Kit", "Injection Kit", "Pen Kit", "Nasal Spray", "Lyophilized Powder"];
+const inputClass =
+  "mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-neutral-900 focus:border-[#1b6b80] focus:outline-none";
 
 function findSpec(specs: ProductSpec[] | undefined, label: string) {
   return specs?.find((s) => s.label.toLowerCase() === label.toLowerCase())?.value ?? "";
@@ -24,11 +29,72 @@ export default function ProductForm({
   cancelHref?: string;
   rates: GbpRates;
 }) {
-  const [extraSpecs, setExtraSpecs] = useState<ProductSpec[]>(
-    () => product?.specs.filter((s) => !KNOWN_SPECS.includes(s.label)) ?? []
-  );
-  const [priceInput, setPriceInput] = useState(product?.price ?? "");
+  const initialExtraSpecs = product?.specs.filter((s) => !KNOWN_SPECS.includes(s.label)) ?? [];
+  const initialPrice = product?.price ?? "";
+  const initialForm = product?.form ?? "Lyophilized Powder";
+  const initialTitle = product?.title ?? "";
+  const initialSizes = product?.sizes.join(", ") ?? "";
+  const initialCategory = product?.category ?? "Uncategorized";
+  const initialFormValue = FORMS.includes(initialForm) ? initialForm : "Other";
+  const initialFormCustom = FORMS.includes(initialForm) ? "" : initialForm;
+  const initialCas = findSpec(product?.specs, "CAS Number");
+  const initialFormula = findSpec(product?.specs, "Molecular Formula");
+  const initialWeight = findSpec(product?.specs, "Molecular Weight");
+  const initialPurity = findSpec(product?.specs, "Purity");
+  const initialSequence = findSpec(product?.specs, "Peptide Sequence");
+
+  const [extraSpecs, setExtraSpecs] = useState<ProductSpec[]>(initialExtraSpecs);
+  const [priceInput, setPriceInput] = useState(initialPrice);
   const pricePreview = withOtherCurrencies(priceInput, rates);
+
+  const [quickFill, setQuickFill] = useState("");
+  const [title, setTitle] = useState(initialTitle);
+  const [sizes, setSizes] = useState(initialSizes);
+  const [category, setCategory] = useState(initialCategory);
+  const [form, setForm] = useState(initialFormValue);
+  const [formCustom, setFormCustom] = useState(initialFormCustom);
+  const [cas, setCas] = useState(initialCas);
+  const [formula, setFormula] = useState(initialFormula);
+  const [weight, setWeight] = useState(initialWeight);
+  const [purity, setPurity] = useState(initialPurity);
+  const [sequence, setSequence] = useState(initialSequence);
+
+  function resetAll() {
+    setQuickFill("");
+    setTitle(initialTitle);
+    setPriceInput(initialPrice);
+    setSizes(initialSizes);
+    setCategory(initialCategory);
+    setForm(initialFormValue);
+    setFormCustom(initialFormCustom);
+    setCas(initialCas);
+    setFormula(initialFormula);
+    setWeight(initialWeight);
+    setPurity(initialPurity);
+    setSequence(initialSequence);
+    setExtraSpecs(initialExtraSpecs);
+  }
+
+  function applyQuickFill(id: string) {
+    setQuickFill(id);
+    const t = PEPTIDE_TEMPLATES.find((p) => p.id === id);
+    if (!t) return;
+    setTitle(t.title);
+    setSizes(t.sizes);
+    setCategory(t.category);
+    if (FORMS.includes(t.form)) {
+      setForm(t.form);
+      setFormCustom("");
+    } else {
+      setForm("Other");
+      setFormCustom(t.form);
+    }
+    setCas(t.cas);
+    setFormula(t.formula);
+    setWeight(t.weight);
+    setPurity(t.purity);
+    setSequence(t.sequence);
+  }
 
   return (
     <div className="rounded-xl border border-neutral-200 bg-white shadow-sm">
@@ -49,6 +115,27 @@ export default function ProductForm({
       </div>
 
       <form action={action} className="space-y-6 p-6">
+        <div className="rounded-lg border border-[#cfe8ee] bg-[#f3fbfc] p-4">
+          <label className="text-sm font-medium text-neutral-700" htmlFor="quickFill">
+            Quick Fill — start from a known compound
+          </label>
+          <select
+            id="quickFill"
+            value={quickFill}
+            onChange={(e) => applyQuickFill(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">— Select a compound —</option>
+            {PEPTIDE_TEMPLATES.map((t) => (
+              <option key={t.id} value={t.id}>{t.label}</option>
+            ))}
+          </select>
+          <p className="mt-1.5 text-xs text-neutral-500">
+            Fills in Title, Form, Category, Sizes and Specifications below from reference data —
+            double-check CAS number, formula, weight and purity before publishing.
+          </p>
+        </div>
+
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium text-neutral-700" htmlFor="title">
@@ -59,8 +146,9 @@ export default function ProductForm({
               name="title"
               type="text"
               required
-              defaultValue={product?.title}
-              className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-neutral-900 focus:border-[#1b6b80] focus:outline-none"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className={inputClass}
             />
           </div>
           <div>
@@ -72,10 +160,10 @@ export default function ProductForm({
               name="price"
               type="text"
               required
-              placeholder="£59.99 or £59.99 – £107.99"
+              placeholder="$59.99 or $59.99 – $107.99"
               value={priceInput}
               onChange={(e) => setPriceInput(e.target.value)}
-              className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-neutral-900 focus:border-[#1b6b80] focus:outline-none"
+              className={inputClass}
             />
             {pricePreview !== priceInput && (
               <p className="mt-1 text-xs text-neutral-500">Shown to customers as: {pricePreview}</p>
@@ -91,21 +179,47 @@ export default function ProductForm({
               name="sizes"
               type="text"
               placeholder="10MG, 20MG"
-              defaultValue={product?.sizes.join(", ")}
-              className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-neutral-900 focus:border-[#1b6b80] focus:outline-none"
+              value={sizes}
+              onChange={(e) => setSizes(e.target.value)}
+              className={inputClass}
             />
           </div>
           <div>
             <label className="text-sm font-medium text-neutral-700" htmlFor="form">
               Form
             </label>
-            <input
-              id="form"
-              name="form"
-              type="text"
-              defaultValue={product?.form ?? "Lyophilized Powder"}
-              className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-neutral-900 focus:border-[#1b6b80] focus:outline-none"
-            />
+            <select id="form" value={form} onChange={(e) => setForm(e.target.value)} className={inputClass}>
+              {FORMS.map((f) => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+              <option value="Other">Other (type below)</option>
+            </select>
+            <input type="hidden" name="form" value={form === "Other" ? formCustom : form} />
+            {form === "Other" && (
+              <input
+                type="text"
+                value={formCustom}
+                onChange={(e) => setFormCustom(e.target.value)}
+                placeholder="Custom form"
+                className={`${inputClass} mt-2`}
+              />
+            )}
+          </div>
+          <div>
+            <label className="text-sm font-medium text-neutral-700" htmlFor="category">
+              Category
+            </label>
+            <select
+              id="category"
+              name="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className={inputClass}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -126,8 +240,9 @@ export default function ProductForm({
                 id="specCas"
                 name="specCas"
                 type="text"
-                defaultValue={findSpec(product?.specs, "CAS Number")}
-                className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-neutral-900 focus:border-[#1b6b80] focus:outline-none"
+                value={cas}
+                onChange={(e) => setCas(e.target.value)}
+                className={inputClass}
               />
             </div>
             <div>
@@ -138,8 +253,9 @@ export default function ProductForm({
                 id="specFormula"
                 name="specFormula"
                 type="text"
-                defaultValue={findSpec(product?.specs, "Molecular Formula")}
-                className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-neutral-900 focus:border-[#1b6b80] focus:outline-none"
+                value={formula}
+                onChange={(e) => setFormula(e.target.value)}
+                className={inputClass}
               />
             </div>
             <div>
@@ -150,8 +266,9 @@ export default function ProductForm({
                 id="specWeight"
                 name="specWeight"
                 type="text"
-                defaultValue={findSpec(product?.specs, "Molecular Weight")}
-                className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-neutral-900 focus:border-[#1b6b80] focus:outline-none"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                className={inputClass}
               />
             </div>
             <div>
@@ -162,8 +279,9 @@ export default function ProductForm({
                 id="specPurity"
                 name="specPurity"
                 type="text"
-                defaultValue={findSpec(product?.specs, "Purity")}
-                className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-neutral-900 focus:border-[#1b6b80] focus:outline-none"
+                value={purity}
+                onChange={(e) => setPurity(e.target.value)}
+                className={inputClass}
               />
             </div>
             <div className="sm:col-span-2">
@@ -174,8 +292,9 @@ export default function ProductForm({
                 id="specSequence"
                 name="specSequence"
                 type="text"
-                defaultValue={findSpec(product?.specs, "Peptide Sequence")}
-                className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-neutral-900 focus:border-[#1b6b80] focus:outline-none"
+                value={sequence}
+                onChange={(e) => setSequence(e.target.value)}
+                className={inputClass}
               />
             </div>
           </div>
@@ -237,7 +356,11 @@ export default function ProductForm({
           </a>
           <div className="flex gap-3">
             <button
-              type="reset"
+              type="button"
+              onClick={(e) => {
+                e.currentTarget.form?.reset();
+                resetAll();
+              }}
               className="rounded-lg border border-neutral-300 px-5 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
             >
               Reset

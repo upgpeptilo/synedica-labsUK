@@ -4,13 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useCart } from "@/lib/cart";
 import type { Product } from "@/lib/products";
-import { firstGbpAmount } from "@/lib/currency";
+import { firstGbpAmount, type GbpRates } from "@/lib/currency";
 
-export default function ProductActions({ product }: { product: Product }) {
+export default function ProductActions({ product, rates }: { product: Product; rates: GbpRates }) {
   const router = useRouter();
   const { addItem } = useCart();
   const [size, setSize] = useState(product.sizes[0] ?? "");
-  const priceGbp = firstGbpAmount(product.price);
+  const priceGbp = firstGbpAmount(product.price, rates);
 
   function cartItem() {
     return { slug: product.slug, title: product.title, image: product.image300, priceGbp, size };

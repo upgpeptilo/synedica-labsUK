@@ -11,8 +11,11 @@ create table if not exists products (
   image600 text not null,
   best_seller boolean not null default false,
   specs jsonb not null default '[]',
+  category text not null default 'Uncategorized',
   created_at timestamptz not null default now()
 );
+
+alter table products add column if not exists category text not null default 'Uncategorized';
 
 alter table products enable row level security;
 
@@ -68,31 +71,31 @@ create policy "Authenticated users can delete product images"
 -- (e.g. "3 kits", "5 pens") as WooCommerce variations, which this schema doesn't
 -- model (no bulk pricing feature exists here yet). Images are their real product
 -- photography, downloaded and resized to the site's 300/600 convention.
-insert into products (slug, title, price, sizes, form, image300, image600, best_seller, specs) values
+insert into products (slug, title, price, sizes, form, image300, image600, best_seller, specs, category) values
 ('biotin-40mg-injection-pen-kit', 'Biotin 40mg Injection Pen Kit', '£110.00', array['40MG'], 'Injection Pen Kit', '/images/biotin-40mg-injection-pen-kit-300.png', '/images/biotin-40mg-injection-pen-kit-600.png', false,
-  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"40mg"}]'),
+  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"40mg"}]', 'Recovery'),
 ('cagri-sema', 'Cagri Sema', '£190.00', array[]::text[], 'Injection Kit', '/images/cagri-sema-300.png', '/images/cagri-sema-600.png', false,
-  '[{"label":"Form","value":"Injection Kit"}]'),
+  '[{"label":"Form","value":"Injection Kit"}]', 'Weight Loss'),
 ('glow-skin-112mg', 'Glow Skin 112mg', '£120.00', array['112MG'], 'Pen Kit', '/images/glow-skin-112mg-300.png', '/images/glow-skin-112mg-600.png', true,
-  '[{"label":"Form","value":"Pen Kit"},{"label":"Pack Size","value":"112mg"}]'),
+  '[{"label":"Form","value":"Pen Kit"},{"label":"Pack Size","value":"112mg"}]', 'Cosmetic'),
 ('melanotan-2-nasal-spray', 'Melanotan 2 Nasal Spray', '£50.00', array['20MG'], 'Nasal Spray', '/images/melanotan-2-nasal-spray-300.png', '/images/melanotan-2-nasal-spray-600.png', false,
-  '[{"label":"Form","value":"Nasal Spray"},{"label":"Pack Size","value":"20mg/10ml"}]'),
+  '[{"label":"Form","value":"Nasal Spray"},{"label":"Pack Size","value":"20mg/10ml"}]', 'Cosmetic'),
 ('nad-b12-synedica', 'Synedica NAD+ & B12 Kit', '£145.00', array[]::text[], 'Injection Kit', '/images/nad-b12-synedica-300.png', '/images/nad-b12-synedica-600.png', true,
-  '[{"label":"Form","value":"Injection Kit"}]'),
+  '[{"label":"Form","value":"Injection Kit"}]', 'Recovery'),
 ('somatotropin-hgh-120iu-injection-pen-kit', 'Somatotropin HGH 120iu Injection Pen Kit', '£180.00', array['120IU'], 'Injection Pen Kit', '/images/somatotropin-hgh-120iu-injection-pen-kit-300.png', '/images/somatotropin-hgh-120iu-injection-pen-kit-600.png', true,
-  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"120iu"}]'),
+  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"120iu"}]', 'Recovery'),
 ('synedica-bpc-157-tb-500', 'Synedica BPC 157 & TB 500', '£120.00', array['40MG'], 'Injection Kit', '/images/synedica-bpc-157-tb-500-300.png', '/images/synedica-bpc-157-tb-500-600.png', false,
-  '[{"label":"Blend","value":"BPC-157 + TB-500"},{"label":"Form","value":"Injection Kit"}]'),
+  '[{"label":"Blend","value":"BPC-157 + TB-500"},{"label":"Form","value":"Injection Kit"}]', 'Recovery'),
 ('synedica-cagrireta-40-mg', 'Synedica CagriReta 40mg', '£190.00', array['40MG'], 'Lyophilized Powder', '/images/synedica-cagrireta-40-mg-300.png', '/images/synedica-cagrireta-40-mg-600.png', false,
-  '[{"label":"Form","value":"Lyophilized Powder"},{"label":"Pack Size","value":"40mg"}]'),
+  '[{"label":"Form","value":"Lyophilized Powder"},{"label":"Pack Size","value":"40mg"}]', 'Weight Loss'),
 ('synedica-nad-nmn-1000mg-injection-pen-kit', 'Synedica NAD+ & NMN 1000mg Injection Pen Kit', '£120.00', array['1000MG'], 'Injection Pen Kit', '/images/synedica-nad-nmn-1000mg-injection-pen-kit-300.png', '/images/synedica-nad-nmn-1000mg-injection-pen-kit-600.png', false,
-  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"1000mg"}]'),
+  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"1000mg"}]', 'Recovery'),
 ('synedica-retatrutide-40mg-injection-kit', 'Synedica Retatrutide 40mg Injection Kit', '£130.00', array['40MG'], 'Injection Kit', '/images/synedica-retatrutide-40mg-injection-kit-300.png', '/images/synedica-retatrutide-40mg-injection-kit-600.png', true,
-  '[{"label":"Form","value":"Injection Kit"},{"label":"Pack Size","value":"40mg"}]'),
+  '[{"label":"Form","value":"Injection Kit"},{"label":"Pack Size","value":"40mg"}]', 'Weight Loss'),
 ('synedica-semaglutide-glp-1-pen-kit', 'Synedica Semaglutide GLP-1 Pen Kit', '£160.00', array['8MG'], 'Pen Kit', '/images/synedica-semaglutide-glp-1-pen-kit-300.png', '/images/synedica-semaglutide-glp-1-pen-kit-600.png', true,
-  '[{"label":"Form","value":"Pen Kit"},{"label":"Pack Size","value":"8mg"}]'),
+  '[{"label":"Form","value":"Pen Kit"},{"label":"Pack Size","value":"8mg"}]', 'Weight Loss'),
 ('synedica-tirzepatide-40mg-injection-pen-kit', 'Synedica Tirzepatide 40mg Injection Pen Kit', '£199.00', array['40MG'], 'Injection Pen Kit', '/images/synedica-tirzepatide-40mg-injection-pen-kit-300.png', '/images/synedica-tirzepatide-40mg-injection-pen-kit-600.png', false,
-  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"40mg"}]'),
+  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"40mg"}]', 'Weight Loss'),
 ('trt-hcg-injection-pen-kit', 'Synedica TRT + HCG Injection Pen Kit', '£200.00', array[]::text[], 'Injection Pen Kit', '/images/trt-hcg-injection-pen-kit-300.png', '/images/trt-hcg-injection-pen-kit-600.png', false,
-  '[{"label":"Form","value":"Injection Pen Kit"}]')
-on conflict (slug) do nothing;
+  '[{"label":"Form","value":"Injection Pen Kit"}]', 'Anabolic')
+on conflict (slug) do update set category = excluded.category;

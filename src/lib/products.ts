@@ -17,6 +17,7 @@ export type Product = {
   image600: string;
   bestSeller: boolean;
   specs: ProductSpec[];
+  category: string;
 };
 
 export const storageText =
@@ -36,6 +37,7 @@ type ProductRow = {
   image600: string;
   best_seller: boolean;
   specs: ProductSpec[];
+  category: string;
 };
 
 function mapRow(row: ProductRow): Product {
@@ -50,6 +52,7 @@ function mapRow(row: ProductRow): Product {
     image600: row.image600,
     bestSeller: row.best_seller,
     specs: row.specs,
+    category: row.category,
   };
 }
 
