@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import FaqAccordion from "@/components/FaqAccordion";
+import ReviewsMarquee from "@/components/ReviewsMarquee";
 import AlertBanner from "@/components/AlertBanner";
 import CategoryTabs from "@/components/CategoryTabs";
 import { getProducts } from "@/lib/products";
@@ -41,9 +42,11 @@ export default async function Home() {
     <div className="bg-white">
       <section className="px-4 pt-8">
         <AlertBanner
-          title="Counterfeit Synedica Warning!"
-          body="There is currently a factory in China producing and shipping worldwide dangerous and counterfeit copies of Synedica Retatrutide, Tirzepatide and NAD+ & B12 injection pens."
-          subtext="Any Synedica Retatrutide pens which have this style pen are 100% fake and dangerous"
+          title="Proudly UK-Based — Enfield, London"
+          body="Synedica UK operates from our facility in Enfield, London. Every order ships fast across the UK, and every product is backed by our authenticity and quality guarantee."
+          subtext="7 The Pavilion Business Centre, 6 Kinetic Crescent, Innova Park, Enfield, EN3 7FJ, UK"
+          ctaHref="/reviews"
+          ctaLabel="Read our reviews →"
         />
       </section>
 
@@ -254,6 +257,8 @@ export default async function Home() {
           </Link>
         </div>
       </section>
+
+      <ReviewsMarquee />
 
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="grid gap-10 sm:grid-cols-[280px_1fr]">
