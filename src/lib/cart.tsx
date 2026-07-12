@@ -8,14 +8,15 @@ export type CartItem = {
   image: string;
   priceGbp: number;
   size: string;
+  variantLabel?: string;
   qty: number;
 };
 
 type CartContextValue = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "qty">, qty: number) => void;
-  removeItem: (slug: string, size: string) => void;
-  setQty: (slug: string, size: string, qty: number) => void;
+  removeItem: (slug: string, size: string, variantLabel?: string) => void;
+  setQty: (slug: string, size: string, qty: number, variantLabel?: string) => void;
   clear: () => void;
 };
 
@@ -40,25 +41,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (loaded) localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items, loaded]);
 
+  function sameLine(i: CartItem, slug: string, size: string, variantLabel?: string) {
+    return i.slug === slug && i.size === size && (i.variantLabel ?? "") === (variantLabel ?? "");
+  }
+
   function addItem(item: Omit<CartItem, "qty">, qty: number) {
     setItems((prev) => {
-      const existing = prev.find((i) => i.slug === item.slug && i.size === item.size);
+      const existing = prev.find((i) => sameLine(i, item.slug, item.size, item.variantLabel));
       if (existing) {
         return prev.map((i) =>
-          i.slug === item.slug && i.size === item.size ? { ...i, qty: i.qty + qty } : i
+          sameLine(i, item.slug, item.size, item.variantLabel) ? { ...i, qty: i.qty + qty } : i
         );
       }
       return [...prev, { ...item, qty }];
     });
   }
 
-  function removeItem(slug: string, size: string) {
-    setItems((prev) => prev.filter((i) => !(i.slug === slug && i.size === size)));
+  function removeItem(slug: string, size: string, variantLabel?: string) {
+    setItems((prev) => prev.filter((i) => !sameLine(i, slug, size, variantLabel)));
   }
 
-  function setQty(slug: string, size: string, qty: number) {
+  function setQty(slug: string, size: string, qty: number, variantLabel?: string) {
     if (qty < 1) return;
-    setItems((prev) => prev.map((i) => (i.slug === slug && i.size === size ? { ...i, qty } : i)));
+    setItems((prev) => prev.map((i) => (sameLine(i, slug, size, variantLabel) ? { ...i, qty } : i)));
   }
 
   function clear() {

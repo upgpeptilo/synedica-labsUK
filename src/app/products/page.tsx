@@ -2,7 +2,7 @@ import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import { getProducts } from "@/lib/products";
-import { firstGbpAmount, getGbpRates } from "@/lib/currency";
+import { firstGbpAmount } from "@/lib/currency";
 
 export const metadata = { title: "Products – Synedica UK" };
 
@@ -20,20 +20,20 @@ export default async function ProductsPage({
 }) {
   const { q, sort = "default", category, maxPrice } = await searchParams;
   const query = q?.trim().toLowerCase();
-  const [products, rates] = await Promise.all([getProducts(), getGbpRates()]);
+  const products = await getProducts();
   const categories = [...new Set(products.map((p) => p.category))].sort();
-  const priceCeiling = Math.max(0, ...products.map((p) => firstGbpAmount(p.price, rates)));
+  const priceCeiling = Math.max(0, ...products.map((p) => firstGbpAmount(p.price)));
   const maxPriceNum = maxPrice ? Number(maxPrice) : undefined;
 
   let filtered = query ? products.filter((p) => p.title.toLowerCase().includes(query)) : products;
   if (category) filtered = filtered.filter((p) => p.category === category);
   if (maxPriceNum !== undefined && !Number.isNaN(maxPriceNum)) {
-    filtered = filtered.filter((p) => firstGbpAmount(p.price, rates) <= maxPriceNum);
+    filtered = filtered.filter((p) => firstGbpAmount(p.price) <= maxPriceNum);
   }
 
   const sorted = [...filtered].sort((a, b) => {
-    if (sort === "price-asc") return firstGbpAmount(a.price, rates) - firstGbpAmount(b.price, rates);
-    if (sort === "price-desc") return firstGbpAmount(b.price, rates) - firstGbpAmount(a.price, rates);
+    if (sort === "price-asc") return firstGbpAmount(a.price) - firstGbpAmount(b.price);
+    if (sort === "price-desc") return firstGbpAmount(b.price) - firstGbpAmount(a.price);
     if (sort === "title") return a.title.localeCompare(b.title);
     return 0;
   });

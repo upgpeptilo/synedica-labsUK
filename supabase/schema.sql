@@ -71,6 +71,35 @@ create policy "Authenticated users can delete product images"
 -- (e.g. "3 kits", "5 pens") as WooCommerce variations, which this schema doesn't
 -- model (no bulk pricing feature exists here yet). Images are their real product
 -- photography, downloaded and resized to the site's 300/600 convention.
+alter table products add column if not exists variants_label text;
+
+create table if not exists product_variants (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references products(id) on delete cascade,
+  label text not null,
+  price numeric(10,2) not null,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+alter table product_variants enable row level security;
+
+drop policy if exists "Public can view product variants" on product_variants;
+create policy "Public can view product variants"
+  on product_variants for select using (true);
+
+drop policy if exists "Authenticated users can insert product variants" on product_variants;
+create policy "Authenticated users can insert product variants"
+  on product_variants for insert to authenticated with check (true);
+
+drop policy if exists "Authenticated users can update product variants" on product_variants;
+create policy "Authenticated users can update product variants"
+  on product_variants for update to authenticated using (true);
+
+drop policy if exists "Authenticated users can delete product variants" on product_variants;
+create policy "Authenticated users can delete product variants"
+  on product_variants for delete to authenticated using (true);
+
 insert into products (slug, title, price, sizes, form, image300, image600, best_seller, specs, category) values
 ('biotin-40mg-injection-pen-kit', 'Biotin 40mg Injection Pen Kit', '£110.00', array['40MG'], 'Injection Pen Kit', '/images/biotin-40mg-injection-pen-kit-300.png', '/images/biotin-40mg-injection-pen-kit-600.png', false,
   '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"40mg"}]', 'Recovery'),

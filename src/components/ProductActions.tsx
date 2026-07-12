@@ -4,16 +4,26 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useCart } from "@/lib/cart";
 import type { Product } from "@/lib/products";
-import { firstGbpAmount, type GbpRates } from "@/lib/currency";
+import { firstGbpAmount, formatGbpAmount } from "@/lib/currency";
 
-export default function ProductActions({ product, rates }: { product: Product; rates: GbpRates }) {
+export default function ProductActions({ product }: { product: Product }) {
   const router = useRouter();
   const { addItem } = useCart();
   const [size, setSize] = useState(product.sizes[0] ?? "");
-  const priceGbp = firstGbpAmount(product.price, rates);
+  const [variantId, setVariantId] = useState(product.variants[0]?.id ?? "");
+
+  const selectedVariant = product.variants.find((v) => v.id === variantId);
+  const priceGbp = selectedVariant ? selectedVariant.priceGbp : firstGbpAmount(product.price);
 
   function cartItem() {
-    return { slug: product.slug, title: product.title, image: product.image300, priceGbp, size };
+    return {
+      slug: product.slug,
+      title: product.title,
+      image: product.image300,
+      priceGbp,
+      size,
+      variantLabel: selectedVariant?.label,
+    };
   }
 
   function handleAddToBasket() {
@@ -22,11 +32,34 @@ export default function ProductActions({ product, rates }: { product: Product; r
   }
 
   function handleCheckoutNow() {
-    router.push(`/checkout?buy=${encodeURIComponent(product.slug)}&size=${encodeURIComponent(size)}`);
+    const params = new URLSearchParams({ buy: product.slug, size });
+    if (selectedVariant) params.set("variant", selectedVariant.id);
+    router.push(`/checkout?${params.toString()}`);
   }
 
   return (
     <>
+      <p className="mt-2 text-xl font-semibold text-primary-dark">{formatGbpAmount(priceGbp)}</p>
+
+      {product.variants.length > 0 && (
+        <div className="mt-6">
+          <p className="text-sm font-semibold uppercase text-neutral-500">
+            {product.variantsLabel ?? "Options"}
+          </p>
+          <select
+            value={variantId}
+            onChange={(e) => setVariantId(e.target.value)}
+            className="mt-2 w-full max-w-xs rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-primary focus:outline-none"
+          >
+            {product.variants.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {product.sizes.length > 0 && (
         <div className="mt-6">
           <p className="text-sm font-semibold uppercase text-neutral-500">Size</p>

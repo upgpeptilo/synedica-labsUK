@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import ImageUploader from "./ImageUploader";
-import type { Product, ProductSpec } from "@/lib/products";
-import { withOtherCurrencies, type GbpRates } from "@/lib/currency";
+import type { Product, ProductSpec, ProductVariant } from "@/lib/products";
+import { withGbp } from "@/lib/currency";
 import { PEPTIDE_TEMPLATES } from "@/lib/peptideTemplates";
 
 const KNOWN_SPECS = ["CAS Number", "Molecular Formula", "Molecular Weight", "Purity", "Peptide Sequence"];
@@ -21,15 +21,15 @@ export default function ProductForm({
   action,
   submitLabel,
   cancelHref = "/admin",
-  rates,
 }: {
   product?: Product;
   action: (formData: FormData) => void;
   submitLabel: string;
   cancelHref?: string;
-  rates: GbpRates;
 }) {
   const initialExtraSpecs = product?.specs.filter((s) => !KNOWN_SPECS.includes(s.label)) ?? [];
+  const initialVariants = product?.variants ?? [];
+  const initialVariantsLabel = product?.variantsLabel ?? "";
   const initialPrice = product?.price ?? "";
   const initialForm = product?.form ?? "Lyophilized Powder";
   const initialTitle = product?.title ?? "";
@@ -44,8 +44,10 @@ export default function ProductForm({
   const initialSequence = findSpec(product?.specs, "Peptide Sequence");
 
   const [extraSpecs, setExtraSpecs] = useState<ProductSpec[]>(initialExtraSpecs);
+  const [variants, setVariants] = useState<Pick<ProductVariant, "label" | "priceGbp">[]>(initialVariants);
+  const [variantsLabel, setVariantsLabel] = useState(initialVariantsLabel);
   const [priceInput, setPriceInput] = useState(initialPrice);
-  const pricePreview = withOtherCurrencies(priceInput, rates);
+  const pricePreview = withGbp(priceInput);
 
   const [quickFill, setQuickFill] = useState("");
   const [title, setTitle] = useState(initialTitle);
@@ -73,6 +75,8 @@ export default function ProductForm({
     setPurity(initialPurity);
     setSequence(initialSequence);
     setExtraSpecs(initialExtraSpecs);
+    setVariants(initialVariants);
+    setVariantsLabel(initialVariantsLabel);
   }
 
   function applyQuickFill(id: string) {
@@ -160,7 +164,7 @@ export default function ProductForm({
               name="price"
               type="text"
               required
-              placeholder="$59.99 or $59.99 – $107.99"
+              placeholder="59.99 or 59.99 – 107.99"
               value={priceInput}
               onChange={(e) => setPriceInput(e.target.value)}
               className={inputClass}
@@ -336,6 +340,68 @@ export default function ProductForm({
             className="mt-4 text-sm font-medium text-[#1b6b80] hover:underline"
           >
             + Add another spec
+          </button>
+        </div>
+
+        <div className="border-t border-neutral-200 pt-6">
+          <h3 className="font-semibold text-neutral-900">Variants (dropdown pricing)</h3>
+          <p className="mt-1 text-sm text-neutral-500">
+            Leave empty for a flat-price product. Add rows to show a dropdown where each option has its
+            own price (e.g. &ldquo;3 Kits&rdquo; = &pound;360.00).
+          </p>
+
+          <div className="mt-4">
+            <label className="text-sm font-medium text-neutral-700" htmlFor="variantsLabel">
+              Dropdown Label
+            </label>
+            <input
+              id="variantsLabel"
+              name="variantsLabel"
+              type="text"
+              placeholder="Kits, Pens, Vials…"
+              value={variantsLabel}
+              onChange={(e) => setVariantsLabel(e.target.value)}
+              className={`${inputClass} max-w-xs`}
+            />
+          </div>
+
+          {variants.length > 0 && (
+            <div className="mt-4 space-y-3">
+              {variants.map((variant, index) => (
+                <div key={index} className="flex gap-3">
+                  <input
+                    name="variantOptionLabel"
+                    type="text"
+                    placeholder="Label (e.g. 3 Kits)"
+                    defaultValue={variant.label}
+                    className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:border-[#1b6b80] focus:outline-none"
+                  />
+                  <input
+                    name="variantOptionPrice"
+                    type="text"
+                    placeholder="Price (e.g. 360.00)"
+                    defaultValue={variant.priceGbp}
+                    className="w-40 rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:border-[#1b6b80] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setVariants(variants.filter((_, i) => i !== index))}
+                    className="px-2 text-neutral-400 hover:text-red-600"
+                    aria-label="Remove variant"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setVariants([...variants, { label: "", priceGbp: 0 }])}
+            className="mt-4 text-sm font-medium text-[#1b6b80] hover:underline"
+          >
+            + Add variant option
           </button>
         </div>
 

@@ -44,6 +44,18 @@ function parseSizes(raw: string) {
     .filter(Boolean);
 }
 
+function buildVariants(formData: FormData) {
+  const labels = formData.getAll("variantOptionLabel").map(String);
+  const prices = formData.getAll("variantOptionPrice").map(String);
+  const variants: { label: string; price: number }[] = [];
+  labels.forEach((rawLabel, i) => {
+    const label = rawLabel.trim();
+    const price = parseFloat(prices[i] ?? "");
+    if (label && !Number.isNaN(price)) variants.push({ label, price });
+  });
+  return variants;
+}
+
 function readProductFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const price = String(formData.get("price") ?? "").trim();
@@ -53,28 +65,43 @@ function readProductFields(formData: FormData) {
   const bestSeller = formData.get("bestSeller") === "on";
   const specs = buildSpecs(formData);
   const imageUrl = String(formData.get("imageUrl") ?? "").trim();
+  const variantsLabel = String(formData.get("variantsLabel") ?? "").trim() || null;
+  const variants = buildVariants(formData);
 
-  return { title, price, sizes, form, category, bestSeller, specs, imageUrl };
+  return { title, price, sizes, form, category, bestSeller, specs, imageUrl, variantsLabel, variants };
 }
 
 export async function createProduct(formData: FormData) {
-  const { title, price, sizes, form, category, bestSeller, specs, imageUrl } = readProductFields(formData);
+  const { title, price, sizes, form, category, bestSeller, specs, imageUrl, variantsLabel, variants } =
+    readProductFields(formData);
   const supabase = await createClient();
 
-  const { error } = await supabase.from("products").insert({
-    slug: slugify(title),
-    title,
-    price,
-    sizes,
-    form,
-    category,
-    best_seller: bestSeller,
-    specs,
-    image300: imageUrl,
-    image600: imageUrl,
-  });
+  const { data, error } = await supabase
+    .from("products")
+    .insert({
+      slug: slugify(title),
+      title,
+      price,
+      sizes,
+      form,
+      category,
+      best_seller: bestSeller,
+      specs,
+      image300: imageUrl,
+      image600: imageUrl,
+      variants_label: variantsLabel,
+    })
+    .select("id")
+    .single();
 
   if (error) throw error;
+
+  if (variants.length > 0) {
+    const { error: variantsError } = await supabase.from("product_variants").insert(
+      variants.map((v, i) => ({ product_id: data.id, label: v.label, price: v.price, sort_order: i }))
+    );
+    if (variantsError) throw variantsError;
+  }
 
   revalidatePath("/admin");
   revalidatePath("/products");
@@ -83,7 +110,8 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(id: string, formData: FormData) {
-  const { title, price, sizes, form, category, bestSeller, specs, imageUrl } = readProductFields(formData);
+  const { title, price, sizes, form, category, bestSeller, specs, imageUrl, variantsLabel, variants } =
+    readProductFields(formData);
   const supabase = await createClient();
 
   const update: Record<string, unknown> = {
@@ -94,6 +122,7 @@ export async function updateProduct(id: string, formData: FormData) {
     category,
     best_seller: bestSeller,
     specs,
+    variants_label: variantsLabel,
   };
   if (imageUrl) {
     update.image300 = imageUrl;
@@ -102,6 +131,16 @@ export async function updateProduct(id: string, formData: FormData) {
 
   const { error } = await supabase.from("products").update(update).eq("id", id);
   if (error) throw error;
+
+  const { error: deleteError } = await supabase.from("product_variants").delete().eq("product_id", id);
+  if (deleteError) throw deleteError;
+
+  if (variants.length > 0) {
+    const { error: variantsError } = await supabase.from("product_variants").insert(
+      variants.map((v, i) => ({ product_id: id, label: v.label, price: v.price, sort_order: i }))
+    );
+    if (variantsError) throw variantsError;
+  }
 
   revalidatePath("/admin");
   revalidatePath("/products");
