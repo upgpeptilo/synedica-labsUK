@@ -1,6 +1,6 @@
 "use client";
 
-const WHATSAPP_URL = "https://wa.me/447853104088";
+const WHATSAPP_URL = "https://wa.me/447576034561";
 
 export default function FloatingActions() {
   return (

@@ -10,7 +10,7 @@ import { firstGbpAmount, formatGbpAmount } from "@/lib/currency";
 import AddressFields from "@/components/AddressFields";
 import { PAYMENT_METHODS } from "@/lib/paymentMethods";
 
-const WHATSAPP_URL = "https://wa.me/447853104088";
+const WHATSAPP_URL = "https://wa.me/447576034561";
 
 const inputClass =
   "mt-1.5 w-full rounded-lg border border-neutral-300 px-3 py-2.5 focus:border-primary focus:outline-none";
