@@ -45,12 +45,8 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(!!buySlug);
   const [submitted, setSubmitted] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0].id);
-  const [bankName, setBankName] = useState("");
 
   function paymentSummary() {
-    if (paymentMethod === "bank") {
-      return bankName ? `Bank — ${bankName}` : "Bank";
-    }
     return PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label ?? paymentMethod;
   }
 
@@ -231,42 +227,25 @@ function CheckoutContent() {
 
           <fieldset className="mt-5 border-t border-neutral-200 pt-4">
             <legend className="text-sm font-semibold uppercase tracking-wide text-dark">Payment Method</legend>
-            <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="mt-3 space-y-2">
               {PAYMENT_METHODS.map((m) => (
-                <label
-                  key={m.id}
-                  className="flex flex-col items-center gap-1 rounded-lg border border-neutral-300 p-2 text-center has-checked:border-primary has-checked:bg-primary-light"
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value={m.id}
-                    checked={paymentMethod === m.id}
-                    onChange={() => setPaymentMethod(m.id)}
-                    className="sr-only"
-                  />
-                  <Image src={m.image} alt={m.label} width={32} height={32} className="h-8 w-8 object-contain" />
-                  <span className="text-[11px] leading-tight text-neutral-700">{m.label}</span>
-                </label>
+                <div key={m.id}>
+                  <label className="flex items-center gap-2 rounded-lg border border-neutral-300 p-3 has-checked:border-primary">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={m.id}
+                      checked={paymentMethod === m.id}
+                      onChange={() => setPaymentMethod(m.id)}
+                    />
+                    <span className="text-sm font-semibold text-dark">{m.label}</span>
+                  </label>
+                  {paymentMethod === m.id && (
+                    <p className="mt-2 px-1 text-xs text-neutral-500">{m.description}</p>
+                  )}
+                </div>
               ))}
             </div>
-
-            {paymentMethod === "bank" && (
-              <div className="mt-4 border-t border-neutral-200 pt-4">
-                <label className="text-sm font-medium text-neutral-700" htmlFor="bankName">
-                  Bank name (optional)
-                </label>
-                <input
-                  id="bankName"
-                  type="text"
-                  name="bankName"
-                  value={bankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                  placeholder="Enter your bank name"
-                  className={inputClass}
-                />
-              </div>
-            )}
           </fieldset>
 
           <button type="submit" className="mt-5 w-full rounded bg-dark py-3 font-semibold text-white hover:bg-neutral-800">
