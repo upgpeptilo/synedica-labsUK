@@ -37,6 +37,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const buySlug = searchParams.get("buy");
   const buySize = searchParams.get("size") ?? "";
+  const buyQty = Number(searchParams.get("qty")) || 1;
   const buyVariantId = searchParams.get("variant");
   const { items: cartItems, clear } = useCart();
 
@@ -73,7 +74,7 @@ function CheckoutContent() {
         priceGbp: buyNowVariant ? buyNowVariant.price : firstGbpAmount(buyNowRow.price),
         size: buySize,
         variantLabel: buyNowVariant?.label,
-        qty: 1,
+        qty: buyQty,
       }
     : null;
 
@@ -198,13 +199,16 @@ function CheckoutContent() {
           </div>
           <div className="divide-y divide-neutral-100">
             {items.map((item) => (
-              <div key={`${item.slug}-${item.size}-${item.variantLabel ?? ""}`} className="flex items-center gap-3 py-3 text-sm">
+              <div key={`${item.slug}-${item.size}-${item.variantLabel ?? ""}`} className="flex items-start gap-3 py-3 text-sm">
                 <Image src={item.image} alt={item.title} width={40} height={40} className="rounded border border-neutral-200 object-contain" />
-                <span className="flex-1 text-neutral-700">
-                  {item.title}
-                  {item.variantLabel && ` (${item.variantLabel})`}
-                  {item.size && ` (${item.size})`} × {item.qty}
-                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-neutral-700">{item.title}</p>
+                  <div className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-neutral-500">
+                    {item.variantLabel && <span>Option: {item.variantLabel}</span>}
+                    {item.size && <span>Size: {item.size}</span>}
+                    <span>Qty: {item.qty}</span>
+                  </div>
+                </div>
                 <span className="font-semibold text-neutral-900">{fmt(item.priceGbp * item.qty)}</span>
               </div>
             ))}

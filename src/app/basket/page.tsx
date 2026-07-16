@@ -28,26 +28,31 @@ export default function BasketPage() {
 
       <div className="mt-6 divide-y divide-neutral-200 rounded-lg border border-neutral-200 bg-white">
         {items.map((item) => (
-          <div key={`${item.slug}-${item.size}-${item.variantLabel ?? ""}`} className="flex items-center gap-4 p-4">
+          <div key={`${item.slug}-${item.size}-${item.variantLabel ?? ""}`} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4">
             <Image src={item.image} alt={item.title} width={64} height={64} className="rounded border border-neutral-200 object-contain" />
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <p className="font-semibold text-neutral-900">{item.title}</p>
-              {item.variantLabel && <p className="text-sm text-neutral-500">Option: {item.variantLabel}</p>}
-              {item.size && <p className="text-sm text-neutral-500">Size: {item.size}</p>}
-              <p className="text-sm text-neutral-500">{formatGbpAmount(item.priceGbp)}</p>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-neutral-500">
+                {item.variantLabel && <span>Option: {item.variantLabel}</span>}
+                {item.size && <span>Size: {item.size}</span>}
+                <span>{formatGbpAmount(item.priceGbp)} each</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={() => setQty(item.slug, item.size, item.qty - 1, item.variantLabel)} className="h-8 w-8 rounded border border-neutral-300 text-neutral-700 hover:bg-neutral-50">
-                −
-              </button>
-              <span className="w-6 text-center">{item.qty}</span>
-              <button type="button" onClick={() => setQty(item.slug, item.size, item.qty + 1, item.variantLabel)} className="h-8 w-8 rounded border border-neutral-300 text-neutral-700 hover:bg-neutral-50">
-                +
+            <div className="flex items-center justify-between gap-4 sm:justify-end">
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setQty(item.slug, item.size, item.qty - 1, item.variantLabel)} className="h-8 w-8 rounded border border-neutral-300 text-neutral-700 hover:bg-neutral-50">
+                  −
+                </button>
+                <span className="w-6 text-center">{item.qty}</span>
+                <button type="button" onClick={() => setQty(item.slug, item.size, item.qty + 1, item.variantLabel)} className="h-8 w-8 rounded border border-neutral-300 text-neutral-700 hover:bg-neutral-50">
+                  +
+                </button>
+              </div>
+              <p className="w-20 text-right font-semibold text-neutral-900">{formatGbpAmount(item.priceGbp * item.qty)}</p>
+              <button type="button" onClick={() => removeItem(item.slug, item.size, item.variantLabel)} className="text-sm text-red-600 underline">
+                Remove
               </button>
             </div>
-            <button type="button" onClick={() => removeItem(item.slug, item.size, item.variantLabel)} className="text-sm text-red-600 underline">
-              Remove
-            </button>
           </div>
         ))}
       </div>

@@ -11,6 +11,7 @@ export default function ProductActions({ product }: { product: Product }) {
   const { addItem } = useCart();
   const [size, setSize] = useState("");
   const [variantId, setVariantId] = useState("");
+  const [qty, setQty] = useState(1);
 
   const selectedVariant = product.variants.find((v) => v.id === variantId);
   const needsVariant = product.variants.length > 0 && !selectedVariant;
@@ -18,7 +19,7 @@ export default function ProductActions({ product }: { product: Product }) {
   const disabled = needsVariant || needsSize;
 
   const priceGbp = selectedVariant ? selectedVariant.priceGbp : firstGbpAmount(product.price);
-  const priceDisplay = needsVariant ? product.price : formatGbpAmount(priceGbp);
+  const priceDisplay = needsVariant ? product.price : formatGbpAmount(priceGbp * qty);
 
   const missing = [needsSize && "a size", needsVariant && (product.variantsLabel ?? "an option")].filter(Boolean);
 
@@ -34,12 +35,12 @@ export default function ProductActions({ product }: { product: Product }) {
   }
 
   function handleAddToBasket() {
-    addItem(cartItem(), 1);
+    addItem(cartItem(), qty);
     router.push("/basket");
   }
 
   function handleCheckoutNow() {
-    const params = new URLSearchParams({ buy: product.slug, size });
+    const params = new URLSearchParams({ buy: product.slug, size, qty: String(qty) });
     if (selectedVariant) params.set("variant", selectedVariant.id);
     router.push(`/checkout?${params.toString()}`);
   }
@@ -93,6 +94,29 @@ export default function ProductActions({ product }: { product: Product }) {
       )}
 
       <p className="mt-4 text-sm text-neutral-500">Form: {product.form}</p>
+
+      <div className="mt-6">
+        <p className="text-sm font-semibold uppercase text-neutral-500">Quantity</p>
+        <div className="mt-2 flex items-center gap-2">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setQty((q) => Math.max(1, q - 1))}
+            className="h-9 w-9 rounded border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            −
+          </button>
+          <span className="w-8 text-center">{qty}</span>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setQty((q) => q + 1)}
+            className="h-9 w-9 rounded border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            +
+          </button>
+        </div>
+      </div>
 
       {disabled && (
         <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
