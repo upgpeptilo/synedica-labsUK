@@ -6,11 +6,6 @@ export type PaymentOption = {
 
 export const PAYMENT_METHODS: PaymentOption[] = [
   {
-    id: "crypto",
-    label: "Crypto Currency",
-    description: "We'll send you our crypto wallet details via WhatsApp so you can complete payment.",
-  },
-  {
     id: "bank",
     label: "Bank Transfer",
     description:
