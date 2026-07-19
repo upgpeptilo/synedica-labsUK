@@ -46,6 +46,8 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(!!buySlug);
   const [submitted, setSubmitted] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0].id);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [confirmMethod, setConfirmMethod] = useState<"whatsapp" | "email" | null>(null);
 
   function paymentSummary() {
     return PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label ?? paymentMethod;
@@ -116,10 +118,74 @@ function CheckoutContent() {
       .filter(Boolean)
       .join("\n");
 
-    window.open(`${WHATSAPP_URL}?text=${encodeURIComponent(message)}`, "_blank");
+    setPendingMessage(message);
+  }
+
+  function finishOrder(method: "whatsapp" | "email") {
+    setConfirmMethod(method);
     setSubmitted(true);
+    setPendingMessage(null);
     if (!buySlug) clear();
   }
+
+  function confirmWhatsApp() {
+    window.open(`${WHATSAPP_URL}?text=${encodeURIComponent(pendingMessage!)}`, "_blank");
+    finishOrder("whatsapp");
+  }
+
+  function confirmEmail() {
+    const subject = encodeURIComponent("New Order");
+    const body = encodeURIComponent(pendingMessage!);
+    window.open(`mailto:office@synedicalabs-uk.com?subject=${subject}&body=${body}`, "_blank");
+    finishOrder("email");
+  }
+
+  function cancelConfirm() {
+    setPendingMessage(null);
+  }
+
+  const confirmPopup = pendingMessage !== null && (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={cancelConfirm}
+        className="absolute inset-0 bg-black/40"
+      />
+      <div className="relative w-full max-w-sm rounded-lg border-2 border-primary bg-white p-6 text-center shadow-xl">
+        <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-dark">
+          How would you like to confirm your order?
+        </h2>
+        <p className="mt-2 text-sm text-neutral-600">We reply within minutes.</p>
+        <p className="mt-1 text-xs text-neutral-500">
+          Email opens a draft in your mail app — press Send there to reach us.
+        </p>
+        <div className="mt-5 space-y-2">
+          <button
+            type="button"
+            onClick={confirmWhatsApp}
+            className="w-full rounded bg-dark py-3 font-semibold text-white hover:bg-neutral-800"
+          >
+            Checkout with WhatsApp
+          </button>
+          <button
+            type="button"
+            onClick={confirmEmail}
+            className="w-full rounded border-2 border-dark py-3 font-semibold text-dark hover:bg-neutral-100"
+          >
+            Checkout with Email
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={cancelConfirm}
+          className="mt-4 text-sm text-neutral-500 underline hover:text-primary"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
 
   if (submitted) {
     return (
@@ -127,7 +193,9 @@ function CheckoutContent() {
         <Breadcrumb step="complete" />
         <h1 className="mt-8 text-2xl font-bold text-primary-dark">Order Received</h1>
         <p className="mt-3 text-neutral-600">
-          We&apos;ve opened WhatsApp with your order details — hit send there to confirm with our team.
+          {confirmMethod === "email"
+            ? "We've opened your email app with your order details — hit send there to confirm with our team."
+            : "We've opened WhatsApp with your order details — hit send there to confirm with our team."}
         </p>
         <p className="mt-2 text-sm text-neutral-500">
           Payment method: {paymentSummary()} — see{" "}
@@ -158,6 +226,7 @@ function CheckoutContent() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-16">
+      {confirmPopup}
       <Breadcrumb step="details" />
 
       <form onSubmit={handleSubmit} className="mt-10 grid gap-8 lg:grid-cols-[1fr_380px]">
