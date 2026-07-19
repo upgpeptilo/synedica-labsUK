@@ -43,7 +43,7 @@ export default function Footer() {
         <div className="mt-10 space-y-1 border-t border-white/15 pt-6 text-xs leading-relaxed text-white/60">
           <p>Synedica UK. For research purposes.</p>
           <p>7 The Pavilion Business Centre, 6 Kinetic Crescent, Innova Park, Enfield, EN3 7FJ, UK</p>
-          <p>info@synedica-uk.shop</p>
+          <p>office@synedicalabs-uk.com</p>
           <p>© {new Date().getFullYear()} Synedica UK. All Rights Reserved.</p>
         </div>
       </div>

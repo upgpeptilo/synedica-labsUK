@@ -5,7 +5,7 @@ export default function ContactPage() {
     <div className="mx-auto max-w-xl px-4 py-16">
       <h1 className="text-3xl font-bold text-primary-dark">Contact</h1>
       <p className="mt-2 text-neutral-600">
-        Fill in the form below or email info@synedica-uk.shop, a member of the team will be in
+        Fill in the form below or email office@synedicalabs-uk.com, a member of the team will be in
         touch shortly.
       </p>
 
