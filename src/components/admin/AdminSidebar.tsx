@@ -8,17 +8,19 @@ const links = [
   { href: "/admin", label: "Home" },
   { href: "/admin/products/new", label: "Add Product" },
   { href: "/admin/products", label: "All Products" },
+  { href: "/admin/orders", label: "Orders" },
 ];
 
 function isActive(pathname: string, href: string) {
   if (href === "/admin") return pathname === "/admin";
   if (href === "/admin/products/new") return pathname === "/admin/products/new";
+  if (href === "/admin/orders") return pathname === "/admin/orders" || pathname.startsWith("/admin/orders/");
   return pathname === "/admin/products" || pathname.startsWith("/admin/products/") && !pathname.startsWith("/admin/products/new");
 }
 
 export { links, isActive };
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ pendingOrders = 0 }: { pendingOrders?: number }) {
   const pathname = usePathname();
 
   return (
@@ -29,11 +31,16 @@ export default function AdminSidebar() {
           <Link
             key={link.href}
             href={link.href}
-            className={`rounded-lg px-3 py-2 ${
+            className={`flex items-center justify-between rounded-lg px-3 py-2 ${
               isActive(pathname, link.href) ? "bg-white text-[#1b6b80] shadow-sm" : "hover:bg-white/60"
             }`}
           >
             {link.label}
+            {link.href === "/admin/orders" && pendingOrders > 0 && (
+              <span className="animate-pulse rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white">
+                {pendingOrders}
+              </span>
+            )}
           </Link>
         ))}
       </nav>

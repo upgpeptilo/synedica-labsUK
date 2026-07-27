@@ -158,6 +158,20 @@ export async function deleteProduct(id: string) {
   revalidatePath("/");
 }
 
+export async function updateOrderStatus(id: string, status: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("orders").update({ status }).eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/orders");
+}
+
+export async function deleteOrder(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("orders").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/orders");
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

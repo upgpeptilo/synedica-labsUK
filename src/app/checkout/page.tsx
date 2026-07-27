@@ -9,8 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { firstGbpAmount, formatGbpAmount } from "@/lib/currency";
 import AddressFields from "@/components/AddressFields";
 import { PAYMENT_METHODS } from "@/lib/paymentMethods";
-
-const WHATSAPP_URL = "https://wa.me/447576034561";
+import { placeOrder } from "./actions";
 
 const inputClass =
   "mt-1.5 w-full rounded-lg border border-neutral-300 px-3 py-2.5 focus:border-primary focus:outline-none";
@@ -45,9 +44,9 @@ function CheckoutContent() {
   const [buyNowVariant, setBuyNowVariant] = useState<{ label: string; price: number } | null>(null);
   const [loading, setLoading] = useState(!!buySlug);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderNumber, setOrderNumber] = useState<number | null>(null);
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0].id);
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
-  const [confirmMethod, setConfirmMethod] = useState<"whatsapp" | "email" | null>(null);
 
   function paymentSummary() {
     return PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label ?? paymentMethod;
@@ -84,7 +83,7 @@ function CheckoutContent() {
   const subtotal = items.reduce((sum, i) => sum + i.priceGbp * i.qty, 0);
   const fmt = formatGbpAmount;
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     const get = (key: string) => String(data.get(key) ?? "").trim();
@@ -98,106 +97,50 @@ function CheckoutContent() {
       .filter(Boolean)
       .join(", ");
 
-    const message = [
-      "New order from Synedica UK website:",
-      "",
-      `Name: ${get("billingFirstName")} ${get("billingLastName")}`,
-      `Email: ${get("email")}`,
-      get("phone") && `Phone: ${get("phone")}`,
-      `Address: ${address}`,
-      "",
-      "Items:",
-      ...items.map(
-        (i) =>
-          `- ${i.title}${i.variantLabel ? ` (${i.variantLabel})` : ""}${i.size ? ` (${i.size})` : ""} x${i.qty} — ${fmt(i.priceGbp * i.qty)}`
-      ),
-      `Total: ${fmt(subtotal)}`,
-      `Payment method: ${paymentSummary()}`,
-      get("notes") && `Notes: ${get("notes")}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    setPendingMessage(message);
+    setIsSubmitting(true);
+    try {
+      const orderNum = await placeOrder({
+        name: `${get("billingFirstName")} ${get("billingLastName")}`.trim(),
+        email: get("email"),
+        address,
+        paymentMethod: paymentSummary(),
+        items: items.map((i) => ({
+          title: i.title,
+          size: i.size,
+          variantLabel: i.variantLabel,
+          qty: i.qty,
+          priceGbp: i.priceGbp,
+        })),
+        total: subtotal,
+      });
+      setOrderNumber(orderNum);
+      setSubmitted(true);
+      if (!buySlug) clear();
+    } catch {
+      alert("Something went wrong placing your order. Please try again.");
+      setIsSubmitting(false);
+    }
   }
-
-  function finishOrder(method: "whatsapp" | "email") {
-    setConfirmMethod(method);
-    setSubmitted(true);
-    setPendingMessage(null);
-    if (!buySlug) clear();
-  }
-
-  function confirmWhatsApp() {
-    window.open(`${WHATSAPP_URL}?text=${encodeURIComponent(pendingMessage!)}`, "_blank");
-    finishOrder("whatsapp");
-  }
-
-  function confirmEmail() {
-    const subject = encodeURIComponent("New Order");
-    const body = encodeURIComponent(pendingMessage!);
-    window.open(`mailto:office@synedicalabs-uk.com?subject=${subject}&body=${body}`, "_blank");
-    finishOrder("email");
-  }
-
-  function cancelConfirm() {
-    setPendingMessage(null);
-  }
-
-  const confirmPopup = pendingMessage !== null && (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <button
-        type="button"
-        aria-label="Close"
-        onClick={cancelConfirm}
-        className="absolute inset-0 bg-black/40"
-      />
-      <div className="relative w-full max-w-sm rounded-lg border-2 border-primary bg-white p-6 text-center shadow-xl">
-        <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-dark">
-          How would you like to confirm your order?
-        </h2>
-        <p className="mt-2 text-sm text-neutral-600">We reply within minutes.</p>
-        <p className="mt-1 text-xs text-neutral-500">
-          Email opens a draft in your mail app — press Send there to reach us.
-        </p>
-        <div className="mt-5 space-y-2">
-          <button
-            type="button"
-            onClick={confirmWhatsApp}
-            className="w-full rounded bg-dark py-3 font-semibold text-white hover:bg-neutral-800"
-          >
-            Checkout with WhatsApp
-          </button>
-          <button
-            type="button"
-            onClick={confirmEmail}
-            className="w-full rounded border-2 border-dark py-3 font-semibold text-dark hover:bg-neutral-100"
-          >
-            Checkout with Email
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={cancelConfirm}
-          className="mt-4 text-sm text-neutral-500 underline hover:text-primary"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
 
   if (submitted) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <Breadcrumb step="complete" />
         <h1 className="mt-8 text-2xl font-bold text-primary-dark">Order Received</h1>
-        <p className="mt-3 text-neutral-600">
-          {confirmMethod === "email"
-            ? "We've opened your email app with your order details — hit send there to confirm with our team."
-            : "We've opened WhatsApp with your order details — hit send there to confirm with our team."}
+        <p className="mt-3 text-lg font-semibold text-dark">
+          ORD-{String(orderNumber).padStart(4, "0")}
         </p>
-        <p className="mt-2 text-sm text-neutral-500">
+        <div className="mt-6 rounded-lg border-2 border-primary bg-white p-5 text-left">
+          <h2 className="font-heading text-sm font-bold uppercase tracking-wide text-dark">
+            What happens next?
+          </h2>
+          <ol className="mt-3 list-inside list-decimal space-y-1.5 text-sm text-neutral-600">
+            <li>Our team reviews your order within 24 hours.</li>
+            <li>We&apos;ll email you to confirm your payment details.</li>
+            <li>Once confirmed, your order is processed and shipped.</li>
+          </ol>
+        </div>
+        <p className="mt-4 text-sm text-neutral-500">
           Payment method: {paymentSummary()} — see{" "}
           <Link href="/how-to-pay" className="underline hover:text-primary">How to Pay</Link> for next steps.
         </p>
@@ -226,7 +169,6 @@ function CheckoutContent() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-16">
-      {confirmPopup}
       <Breadcrumb step="details" />
 
       <form onSubmit={handleSubmit} className="mt-10 grid gap-8 lg:grid-cols-[1fr_380px]">
@@ -321,8 +263,12 @@ function CheckoutContent() {
             </div>
           </fieldset>
 
-          <button type="submit" className="mt-5 w-full rounded bg-dark py-3 font-semibold text-white hover:bg-neutral-800">
-            Place Order
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="mt-5 w-full rounded bg-dark py-3 font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting ? "Placing Order…" : "Place Order"}
           </button>
 
           <p className="mt-3 text-xs text-neutral-500">
