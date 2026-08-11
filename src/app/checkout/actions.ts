@@ -19,20 +19,17 @@ export async function placeOrder(input: {
   total: number;
 }) {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .insert({
-      name: input.name,
-      email: input.email,
-      address: input.address,
-      payment_method: input.paymentMethod,
-      currency: "GBP",
-      items: input.items,
-      total: input.total,
-    })
-    .select("order_number")
-    .single();
+  // ponytail: rpc, not insert().select() — anon has no SELECT policy on orders,
+  // so the RETURNING read would be blocked by RLS.
+  const { data, error } = await supabase.rpc("place_order", {
+    p_name: input.name,
+    p_email: input.email,
+    p_address: input.address,
+    p_payment_method: input.paymentMethod,
+    p_items: input.items,
+    p_total: input.total,
+  });
 
   if (error) throw error;
-  return data.order_number as number;
+  return data as number;
 }

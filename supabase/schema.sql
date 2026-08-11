@@ -100,6 +100,64 @@ drop policy if exists "Authenticated users can delete product variants" on produ
 create policy "Authenticated users can delete product variants"
   on product_variants for delete to authenticated using (true);
 
+create table if not exists orders (
+  id uuid primary key default gen_random_uuid(),
+  order_number int generated always as identity,
+  name text not null,
+  email text not null,
+  address text not null,
+  payment_method text not null,
+  currency text not null default 'GBP',
+  items jsonb not null default '[]',
+  total numeric(10,2) not null,
+  status text not null default 'pending',
+  created_at timestamptz not null default now()
+);
+
+alter table orders enable row level security;
+
+-- checkout is unauthenticated. Orders are inserted through place_order() below,
+-- which is security definer so the anon role never needs read access to the table.
+drop policy if exists "Anyone can insert orders" on orders;
+
+create or replace function place_order(
+  p_name text,
+  p_email text,
+  p_address text,
+  p_payment_method text,
+  p_items jsonb,
+  p_total numeric
+) returns int
+language sql
+security definer
+set search_path = public
+as $$
+  insert into orders (name, email, address, payment_method, currency, items, total)
+  values (p_name, p_email, p_address, p_payment_method, 'GBP', p_items, p_total)
+  returning order_number;
+$$;
+
+grant execute on function place_order(text, text, text, text, jsonb, numeric) to anon, authenticated;
+
+-- only admins (logged in) can view/manage orders
+drop policy if exists "Authenticated users can view orders" on orders;
+create policy "Authenticated users can view orders"
+  on orders for select
+  to authenticated
+  using (true);
+
+drop policy if exists "Authenticated users can update orders" on orders;
+create policy "Authenticated users can update orders"
+  on orders for update
+  to authenticated
+  using (true);
+
+drop policy if exists "Authenticated users can delete orders" on orders;
+create policy "Authenticated users can delete orders"
+  on orders for delete
+  to authenticated
+  using (true);
+
 insert into products (slug, title, price, sizes, form, image300, image600, best_seller, specs, category) values
 ('biotin-40mg-injection-pen-kit', 'Biotin 40mg Injection Pen Kit', '£110.00', array['40MG'], 'Injection Pen Kit', '/images/biotin-40mg-injection-pen-kit-300.png', '/images/biotin-40mg-injection-pen-kit-600.png', false,
   '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"40mg"}]', 'Recovery'),
