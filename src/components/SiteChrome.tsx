@@ -19,7 +19,7 @@ export default function SiteChrome({ children }: { children: React.ReactNode }) 
       <main className="flex-1">{children}</main>
       <Footer />
       <FloatingActions />
-      <Script src="//code.jivosite.com/widget/9UyLTP3NKm" strategy="afterInteractive" />
+      <Script src="//code.jivosite.com/widget/AnwYW4JENR" strategy="afterInteractive" />
     </CartProvider>
   );
 }
