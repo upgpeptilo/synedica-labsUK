@@ -1,4 +1,4 @@
-const WHATSAPP_URL = "https://wa.me/447482542021";
+const WHATSAPP_URL = "https://wa.me/447882524986";
 
 export const metadata = { title: "How to Pay – Synedica UK" };
 
