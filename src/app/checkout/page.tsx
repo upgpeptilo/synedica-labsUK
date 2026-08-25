@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { firstGbpAmount, formatGbpAmount } from "@/lib/currency";
 import AddressFields from "@/components/AddressFields";
 import { PAYMENT_METHODS } from "@/lib/paymentMethods";
+import { buildWhatsAppOrderLink } from "@/lib/whatsapp";
 import { placeOrder } from "./actions";
 
 const inputClass =
@@ -43,9 +44,7 @@ function CheckoutContent() {
   const [buyNowRow, setBuyNowRow] = useState<{ slug: string; title: string; price: string; image300: string } | null>(null);
   const [buyNowVariant, setBuyNowVariant] = useState<{ label: string; price: number } | null>(null);
   const [loading, setLoading] = useState(!!buySlug);
-  const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderNumber, setOrderNumber] = useState<number | null>(null);
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0].id);
 
   function paymentSummary() {
@@ -102,6 +101,7 @@ function CheckoutContent() {
       const orderNum = await placeOrder({
         name: `${get("billingFirstName")} ${get("billingLastName")}`.trim(),
         email: get("email"),
+        phone: get("phone"),
         address,
         paymentMethod: paymentSummary(),
         items: items.map((i) => ({
@@ -113,42 +113,14 @@ function CheckoutContent() {
         })),
         total: subtotal,
       });
-      setOrderNumber(orderNum);
-      setSubmitted(true);
+      const whatsappLink = buildWhatsAppOrderLink(items, subtotal, orderNum);
       if (!buySlug) clear();
+      window.open(whatsappLink, "_blank", "noopener,noreferrer");
+      setIsSubmitting(false);
     } catch {
       alert("Something went wrong placing your order. Please try again.");
       setIsSubmitting(false);
     }
-  }
-
-  if (submitted) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <Breadcrumb step="complete" />
-        <h1 className="mt-8 text-2xl font-bold text-primary-dark">Order Received</h1>
-        <p className="mt-3 text-lg font-semibold text-dark">
-          ORD-{String(orderNumber).padStart(4, "0")}
-        </p>
-        <div className="mt-6 rounded-lg border-2 border-primary bg-white p-5 text-left">
-          <h2 className="font-heading text-sm font-bold uppercase tracking-wide text-dark">
-            What happens next?
-          </h2>
-          <ol className="mt-3 list-inside list-decimal space-y-1.5 text-sm text-neutral-600">
-            <li>Our team reviews your order within 24 hours.</li>
-            <li>We&apos;ll email you to confirm your payment details.</li>
-            <li>Once confirmed, your order is processed and shipped.</li>
-          </ol>
-        </div>
-        <p className="mt-4 text-sm text-neutral-500">
-          Payment method: {paymentSummary()} — see{" "}
-          <Link href="/how-to-pay" className="underline hover:text-primary">How to Pay</Link> for next steps.
-        </p>
-        <Link href="/products" className="mt-6 inline-block rounded bg-dark px-5 py-2.5 font-semibold text-white hover:bg-neutral-800">
-          Continue Shopping
-        </Link>
-      </div>
-    );
   }
 
   if (loading) {
@@ -179,8 +151,8 @@ function CheckoutContent() {
           </div>
 
           <div className="mt-4">
-            <label className="text-sm font-medium text-neutral-700" htmlFor="phone">Phone (optional)</label>
-            <input id="phone" name="phone" type="tel" className={inputClass} />
+            <label className="text-sm font-medium text-neutral-700" htmlFor="phone">Phone number *</label>
+            <input id="phone" name="phone" type="tel" required className={inputClass} />
           </div>
           <div className="mt-4">
             <label className="text-sm font-medium text-neutral-700" htmlFor="email">Email address *</label>
@@ -268,7 +240,7 @@ function CheckoutContent() {
             disabled={isSubmitting}
             className="mt-5 w-full rounded bg-dark py-3 font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Placing Order…" : "Place Order"}
+            {isSubmitting ? "Redirecting…" : "Checkout via WhatsApp"}
           </button>
 
           <p className="mt-3 text-xs text-neutral-500">

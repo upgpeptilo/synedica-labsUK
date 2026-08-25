@@ -18,6 +18,7 @@ type Order = {
   order_number: number;
   name: string;
   email: string;
+  phone: string;
   address: string;
   payment_method: string;
   currency: string;
@@ -61,6 +62,10 @@ export default async function OrdersPage() {
             </summary>
 
             <div className="mt-4 space-y-3 border-t border-neutral-200 pt-4 text-sm">
+              <p>
+                <span className="font-semibold text-neutral-700">Phone: </span>
+                {order.phone}
+              </p>
               <p>
                 <span className="font-semibold text-neutral-700">Address: </span>
                 {order.address}

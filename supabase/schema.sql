@@ -105,6 +105,7 @@ create table if not exists orders (
   order_number int generated always as identity,
   name text not null,
   email text not null,
+  phone text not null default '',
   address text not null,
   payment_method text not null,
   currency text not null default 'GBP',
@@ -114,15 +115,20 @@ create table if not exists orders (
   created_at timestamptz not null default now()
 );
 
+alter table orders add column if not exists phone text not null default '';
+
 alter table orders enable row level security;
 
 -- checkout is unauthenticated. Orders are inserted through place_order() below,
 -- which is security definer so the anon role never needs read access to the table.
 drop policy if exists "Anyone can insert orders" on orders;
 
+drop function if exists place_order(text, text, text, text, jsonb, numeric);
+
 create or replace function place_order(
   p_name text,
   p_email text,
+  p_phone text,
   p_address text,
   p_payment_method text,
   p_items jsonb,
@@ -132,12 +138,12 @@ language sql
 security definer
 set search_path = public
 as $$
-  insert into orders (name, email, address, payment_method, currency, items, total)
-  values (p_name, p_email, p_address, p_payment_method, 'GBP', p_items, p_total)
+  insert into orders (name, email, phone, address, payment_method, currency, items, total)
+  values (p_name, p_email, p_phone, p_address, p_payment_method, 'GBP', p_items, p_total)
   returning order_number;
 $$;
 
-grant execute on function place_order(text, text, text, text, jsonb, numeric) to anon, authenticated;
+grant execute on function place_order(text, text, text, text, text, jsonb, numeric) to anon, authenticated;
 
 -- only admins (logged in) can view/manage orders
 drop policy if exists "Authenticated users can view orders" on orders;

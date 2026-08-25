@@ -1,4 +1,4 @@
-const WHATSAPP_URL = "https://wa.me/447882524986";
+import { WHATSAPP_URL } from "@/lib/whatsapp";
 
 export const metadata = { title: "How to Pay – Synedica UK" };
 

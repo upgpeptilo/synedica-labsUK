@@ -13,6 +13,7 @@ type OrderItemInput = {
 export async function placeOrder(input: {
   name: string;
   email: string;
+  phone: string;
   address: string;
   paymentMethod: string;
   items: OrderItemInput[];
@@ -24,6 +25,7 @@ export async function placeOrder(input: {
   const { data, error } = await supabase.rpc("place_order", {
     p_name: input.name,
     p_email: input.email,
+    p_phone: input.phone,
     p_address: input.address,
     p_payment_method: input.paymentMethod,
     p_items: input.items,
