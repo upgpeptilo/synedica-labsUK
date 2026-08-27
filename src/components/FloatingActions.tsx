@@ -1,16 +1,23 @@
 "use client";
 
-export default function FloatingActions() {
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
+
+export default function FloatingActions({ whatsappNumber }: { whatsappNumber: string }) {
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-3">
-      <button
-        type="button"
-        aria-label="Back to top"
-        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-dark text-white shadow-lg hover:bg-neutral-800"
-      >
-        ↑
-      </button>
-    </div>
+    // ponytail: bottom-24/right-5 stacks this above the Jivo chat bubble's
+    // default ~56px slot at bottom-5 right-5 — re-check if Jivo's size/position
+    // is ever reconfigured.
+    <a
+      href={buildWhatsAppUrl(whatsappNumber)}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Chat on WhatsApp"
+      className="fixed bottom-24 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg hover:bg-[#1ebe57]"
+    >
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-7 w-7">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.096.548 4.14 1.59 5.943L0 24l6.192-1.62A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.86 0-3.68-.5-5.26-1.44l-.377-.223-3.68.964.98-3.588-.246-.372A9.96 9.96 0 012 12c0-5.514 4.486-10 10-10s10 4.486 10 10-4.486 10-10 10z" />
+      </svg>
+    </a>
   );
 }

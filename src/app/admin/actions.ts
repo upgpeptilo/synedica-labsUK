@@ -172,6 +172,22 @@ export async function deleteOrder(id: string) {
   revalidatePath("/admin/orders");
 }
 
+export async function updateSiteSettings(formData: FormData) {
+  const digits = String(formData.get("whatsappNumber") ?? "").replace(/\D/g, "");
+  if (!digits) throw new Error("WhatsApp number must contain at least one digit");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("site_settings")
+    .update({ whatsapp_number: digits })
+    .eq("id", 1);
+  if (error) throw error;
+
+  revalidatePath("/how-to-pay");
+  revalidatePath("/admin/settings");
+  redirect("/admin/settings?saved=1");
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

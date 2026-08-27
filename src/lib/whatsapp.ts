@@ -1,7 +1,10 @@
 import { formatGbpAmount } from "@/lib/currency";
 
-export const WHATSAPP_NUMBER = "447882524986";
-export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
+export const DEFAULT_WHATSAPP_NUMBER = "447882524986";
+
+export function buildWhatsAppUrl(number: string = DEFAULT_WHATSAPP_NUMBER): string {
+  return `https://wa.me/${number}`;
+}
 
 type OrderLineItem = {
   title: string;
@@ -11,7 +14,12 @@ type OrderLineItem = {
   priceGbp: number;
 };
 
-export function buildWhatsAppOrderLink(items: OrderLineItem[], total: number, orderNumber?: number): string {
+export function buildWhatsAppOrderLink(
+  items: OrderLineItem[],
+  total: number,
+  orderNumber?: number,
+  whatsappNumber: string = DEFAULT_WHATSAPP_NUMBER
+): string {
   const lines = items.map((item, i) => {
     const opts = [item.variantLabel, item.size].filter(Boolean).join(", ");
     return `${i + 1}. ${item.title}${opts ? ` (${opts})` : ""} x${item.qty} - ${formatGbpAmount(item.priceGbp * item.qty)}`;
@@ -20,5 +28,5 @@ export function buildWhatsAppOrderLink(items: OrderLineItem[], total: number, or
   const orderRef = orderNumber ? ` (ORD-${String(orderNumber).padStart(4, "0")})` : "";
   const message = [`Hi! I'd like to order${orderRef}:`, "", ...lines, "", `Total: ${formatGbpAmount(total)}`].join("\n");
 
-  return `${WHATSAPP_URL}?text=${encodeURIComponent(message)}`;
+  return `${buildWhatsAppUrl(whatsappNumber)}?text=${encodeURIComponent(message)}`;
 }

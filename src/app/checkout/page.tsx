@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { firstGbpAmount, formatGbpAmount } from "@/lib/currency";
 import AddressFields from "@/components/AddressFields";
 import { PAYMENT_METHODS } from "@/lib/paymentMethods";
-import { buildWhatsAppOrderLink } from "@/lib/whatsapp";
+import { buildWhatsAppOrderLink, DEFAULT_WHATSAPP_NUMBER } from "@/lib/whatsapp";
 import { placeOrder } from "./actions";
 
 const inputClass =
@@ -46,10 +46,23 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(!!buySlug);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0].id);
+  const [whatsappNumber, setWhatsappNumber] = useState(DEFAULT_WHATSAPP_NUMBER);
 
   function paymentSummary() {
     return PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label ?? paymentMethod;
   }
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("site_settings")
+      .select("whatsapp_number")
+      .eq("id", 1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.whatsapp_number) setWhatsappNumber(data.whatsapp_number);
+      });
+  }, []);
 
   useEffect(() => {
     if (!buySlug) return;
@@ -113,7 +126,7 @@ function CheckoutContent() {
         })),
         total: subtotal,
       });
-      const whatsappLink = buildWhatsAppOrderLink(items, subtotal, orderNum);
+      const whatsappLink = buildWhatsAppOrderLink(items, subtotal, orderNum, whatsappNumber);
       if (!buySlug) clear();
       window.open(whatsappLink, "_blank", "noopener,noreferrer");
       setIsSubmitting(false);

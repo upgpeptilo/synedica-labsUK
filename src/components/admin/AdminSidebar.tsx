@@ -9,12 +9,14 @@ const links = [
   { href: "/admin/products/new", label: "Add Product" },
   { href: "/admin/products", label: "All Products" },
   { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/settings", label: "Settings" },
 ];
 
 function isActive(pathname: string, href: string) {
   if (href === "/admin") return pathname === "/admin";
   if (href === "/admin/products/new") return pathname === "/admin/products/new";
   if (href === "/admin/orders") return pathname === "/admin/orders" || pathname.startsWith("/admin/orders/");
+  if (href === "/admin/settings") return pathname === "/admin/settings";
   return pathname === "/admin/products" || pathname.startsWith("/admin/products/") && !pathname.startsWith("/admin/products/new");
 }
 

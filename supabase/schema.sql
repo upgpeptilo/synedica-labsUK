@@ -164,6 +164,33 @@ create policy "Authenticated users can delete orders"
   to authenticated
   using (true);
 
+-- site-wide settings (currently just the WhatsApp contact number).
+-- Single row, id fixed to 1 so there's only ever one to read/update.
+create table if not exists site_settings (
+  id int primary key default 1,
+  whatsapp_number text not null default '447882524986',
+  updated_at timestamptz not null default now(),
+  constraint site_settings_singleton check (id = 1)
+);
+
+alter table site_settings enable row level security;
+
+-- storefront needs to read it to build wa.me links
+drop policy if exists "Public can view site settings" on site_settings;
+create policy "Public can view site settings"
+  on site_settings for select
+  using (true);
+
+-- only admins can edit it; no insert/delete policy — the row is seeded once below
+drop policy if exists "Authenticated users can update site settings" on site_settings;
+create policy "Authenticated users can update site settings"
+  on site_settings for update
+  to authenticated
+  using (true);
+
+insert into site_settings (id, whatsapp_number) values (1, '447882524986')
+on conflict (id) do nothing;
+
 insert into products (slug, title, price, sizes, form, image300, image600, best_seller, specs, category) values
 ('biotin-40mg-injection-pen-kit', 'Biotin 40mg Injection Pen Kit', '£110.00', array['40MG'], 'Injection Pen Kit', '/images/biotin-40mg-injection-pen-kit-300.png', '/images/biotin-40mg-injection-pen-kit-600.png', false,
   '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"40mg"}]', 'Recovery'),
