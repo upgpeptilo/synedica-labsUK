@@ -1,21 +1,23 @@
 -- Run this once in your Supabase project's SQL editor (Database > SQL Editor > New query).
 
 create table if not exists products (
-  id uuid primary key default gen_random_uuid(),
-  slug text unique not null,
-  title text not null,
-  price text not null,
-  sizes text[] not null default '{}',
-  form text not null default 'Lyophilized Powder',
-  image300 text not null,
-  image600 text not null,
-  best_seller boolean not null default false,
-  specs jsonb not null default '[]',
-  category text not null default 'Uncategorized',
-  created_at timestamptz not null default now()
-);
+    id uuid primary key default gen_random_uuid(),
+    slug text unique not null,
+    title text not null,
+    price text not null,
+    sizes text[] not null default '{}',
+    form text not null default 'Lyophilized Powder',
+    image300 text not null,
+    image600 text not null,
+    best_seller boolean not null default false,
+    specs jsonb not null default '[]',
+    category text not null default 'Uncategorized',
+    created_at timestamptz not null default now()
+  );
 
 alter table products add column if not exists category text not null default 'Uncategorized';
+alter table products add column if not exists description text not null default '';
+alter table products add column if not exists meta_description text not null default '';
 
 alter table products enable row level security;
 
@@ -70,13 +72,13 @@ create policy "Authenticated users can delete product images"
 alter table products add column if not exists variants_label text;
 
 create table if not exists product_variants (
-  id uuid primary key default gen_random_uuid(),
-  product_id uuid not null references products(id) on delete cascade,
-  label text not null,
-  price numeric(10,2) not null,
-  sort_order int not null default 0,
-  created_at timestamptz not null default now()
-);
+    id uuid primary key default gen_random_uuid(),
+    product_id uuid not null references products(id) on delete cascade,
+    label text not null,
+    price numeric(10,2) not null,
+    sort_order int not null default 0,
+    created_at timestamptz not null default now()
+  );
 
 alter table product_variants enable row level security;
 
@@ -97,19 +99,19 @@ create policy "Authenticated users can delete product variants"
   on product_variants for delete to authenticated using (true);
 
 create table if not exists orders (
-  id uuid primary key default gen_random_uuid(),
-  order_number int generated always as identity,
-  name text not null,
-  email text not null,
-  phone text not null default '',
-  address text not null,
-  payment_method text not null,
-  currency text not null default 'GBP',
-  items jsonb not null default '[]',
-  total numeric(10,2) not null,
-  status text not null default 'pending',
-  created_at timestamptz not null default now()
-);
+    id uuid primary key default gen_random_uuid(),
+    order_number int generated always as identity,
+    name text not null,
+    email text not null,
+    phone text not null default '',
+    address text not null,
+    payment_method text not null,
+    currency text not null default 'GBP',
+    items jsonb not null default '[]',
+    total numeric(10,2) not null,
+    status text not null default 'pending',
+    created_at timestamptz not null default now()
+  );
 
 alter table orders add column if not exists phone text not null default '';
 
@@ -120,14 +122,14 @@ drop policy if exists "Anyone can insert orders" on orders;
 drop function if exists place_order(text, text, text, text, jsonb, numeric);
 
 create or replace function place_order(
-  p_name text,
-  p_email text,
-  p_phone text,
-  p_address text,
-  p_payment_method text,
-  p_items jsonb,
-  p_total numeric
-) returns int
+    p_name text,
+    p_email text,
+    p_phone text,
+    p_address text,
+    p_payment_method text,
+    p_items jsonb,
+    p_total numeric
+  ) returns int
 language sql
 security definer
 set search_path = public
@@ -160,11 +162,11 @@ create policy "Authenticated users can delete orders"
 
 -- site-wide settings (currently just the WhatsApp contact number).
 create table if not exists site_settings (
-  id int primary key default 1,
-  whatsapp_number text not null default '447882524986',
-  updated_at timestamptz not null default now(),
-  constraint site_settings_singleton check (id = 1)
-);
+    id int primary key default 1,
+    whatsapp_number text not null default '447882524986',
+    updated_at timestamptz not null default now(),
+    constraint site_settings_singleton check (id = 1)
+  );
 
 alter table site_settings enable row level security;
 
@@ -188,180 +190,124 @@ on conflict (id) do nothing;
 -- ============================================================
 
 insert into products (
-  slug,
-  title,
-  price,
-  sizes,
-  form,
-  image300,
-  image600,
-  best_seller,
-  specs,
-  category
-) values
+    slug,
+    title,
+    price,
+    sizes,
+    form,
+    image300,
+    image600,
+    best_seller,
+    specs,
+    category,
+    description,
+    meta_description
+  ) values
 
 (
-  'biotin-40mg-injection-pen-kit',
-  'Biotin 40mg Injection Pen Kit | Laboratory Research',
-  '£110.00',
-  array[
-    '40MG',
-    'CAS 58-85-5',
-    'Vitamin B7',
-    'Research Use Only'
-  ],
-  'Biotin Research Injection Pen Kit | Laboratory & In-Vitro Research Only',
-  '/images/biotin-40mg-injection-pen-kit-300.png',
-  '/images/biotin-40mg-injection-pen-kit-600.png',
-  false,
-  '[
-    {
-      "label":"Quick Answer",
-      "value":"Biotin 40mg Injection Pen Kit contains biotin, also known as vitamin B7, a water-soluble vitamin and cofactor involved in biotin-dependent carboxylase reactions. Biotin has been investigated in biochemical research involving enzyme function, cellular metabolism and gene regulation. This product is supplied strictly for laboratory and in-vitro research use."
-    },
-    {
-      "label":"Research Use",
-      "value":"Strictly for laboratory and in-vitro research use."
-    },
-    {
-      "label":"Regulatory Status",
-      "value":"Not a medicine, not for human or veterinary use or consumption, not licensed as a medicine under the Human Medicines Regulations 2012, and not assessed by the MHRA for safety or efficacy as a medicinal product."
-    },
-    {
-      "label":"Compound",
-      "value":"Biotin"
-    },
-    {
-      "label":"Common Names",
-      "value":"Vitamin B7 / Vitamin H"
-    },
-    {
-      "label":"CAS Number",
-      "value":"58-85-5"
-    },
-    {
-      "label":"Molecular Formula",
-      "value":"C10H16N2O3S"
-    },
-    {
-      "label":"Molecular Weight",
-      "value":"244.31 g/mol"
-    },
-    {
-      "label":"Pack Size",
-      "value":"40mg"
-    },
-    {
-      "label":"Product Form",
-      "value":"Injection Pen Kit"
-    },
-    {
-      "label":"Research Context",
-      "value":"Biotin-dependent carboxylases, biochemical metabolism, biotinylation and gene-expression research."
-    },
-    {
-      "label":"Scientific Reference",
-      "value":"León-Del-Río, Journal of Inherited Metabolic Disease, published 19 March 2019. Biotin is described as a water-soluble vitamin and cofactor for biotin-dependent carboxylases."
-    },
-    {
-      "label":"Scientific Reference 2",
-      "value":"Tong, Cell and Molecular Life Sciences, published March 2013. Biotin-dependent carboxylases are involved in fatty-acid, amino-acid and carbohydrate metabolism."
-    },
-    {
-      "label":"Chemical Verification",
-      "value":"Biotin identity can be cross-checked using authoritative chemical databases including PubChem."
-    },
-    {
-      "label":"Purity",
-      "value":"Refer to the applicable batch Certificate of Analysis. No generic purity percentage is substituted for batch-specific results."
-    },
-    {
-      "label":"Batch Testing",
-      "value":"Refer to the applicable batch Certificate of Analysis and analytical documentation."
-    },
-    {
-      "label":"Storage",
-      "value":"Follow the current product label and applicable batch documentation."
-    },
-    {
-      "label":"Shelf Life",
-      "value":"Follow the applicable batch documentation."
-    },
-    {
-      "label":"COA",
-      "value":"Batch-specific Certificate of Analysis should be reviewed against the material received."
-    },
-    {
-      "label":"UK Research Purchasing",
-      "value":"UK research organisations should verify research-use status, documentation and applicable regulatory requirements before purchase."
-    },
-    {
-      "label":"Human Use",
-      "value":"Not for human use, veterinary use or consumption."
-    },
-    {
-      "label":"Research Questions",
-      "value":"What is Biotin 40mg? What is biotin studied for? What is the CAS number for biotin? What is the molecular weight of biotin? What does a COA show? How can a biotin research product be verified? How should biotin research material be stored?"
-    },
-    {
-      "label":"Internal Link",
-      "value":"[internal: Certificate of Analysis page]"
-    },
-    {
-      "label":"Internal Link",
-      "value":"[internal: Research-use policy]"
-    },
-    {
-      "label":"Internal Link",
-      "value":"[internal: Recovery research products category]"
-    },
-    {
-      "label":"Internal Link",
-      "value":"[internal: UK delivery and storage FAQ]"
-    },
-    {
-      "label":"External Research",
-      "value":"PubMed: Biotin in metabolism, gene expression, and human disease — Alfonso León-Del-Río, 19 March 2019."
-    },
-    {
-      "label":"External Research",
-      "value":"PubMed: Structure and function of biotin-dependent carboxylases — Liang Tong, published March 2013."
-    },
-    {
-      "label":"SEO Keywords",
-      "value":"Biotin 40mg Injection Pen Kit, Biotin 40mg UK, Biotin research UK, Biotin laboratory research, Biotin research use only, Biotin CAS 58-85-5, Biotin molecular weight, Vitamin B7 research, Biotin COA, Biotin Certificate of Analysis, Biotin research-grade, Biotin laboratory supplier, Biotin UK supplier"
-    },
-    {
-      "label":"Meta Title",
-      "value":"Biotin 40mg Injection Pen Kit | Synedica Labs UK"
-    },
-    {
-      "label":"Meta Description",
-      "value":"Biotin 40mg Injection Pen Kit for laboratory research, with batch documentation and third-party testing. Shop research-grade Biotin today."
-    },
-    {
-      "label":"Optimised Page Title",
-      "value":"Biotin 40mg Injection Pen Kit | Research Use"
-    },
-    {
-      "label":"Author",
-      "value":"Synedica Labs UK Science & QA Team [author: QA lead name]"
-    },
-    {
-      "label":"Last Updated",
-      "value":"28 August 2026"
-    },
-    {
-      "label":"Recommended Refresh",
-      "value":"Refresh statistics, scientific examples and regulatory references by 28 November 2026."
-    },
-    {
-      "label":"Compliance Notice",
-      "value":"This product is sold strictly for laboratory and in-vitro research use. It is not a medicine, is not for human or veterinary use or consumption, is not licensed as a medicine under the Human Medicines Regulations 2012, and has not been assessed by the MHRA for safety or efficacy."
-    }
-  ]'::jsonb,
-  'Laboratory Research'
-)
+    'biotin-40mg-injection-pen-kit',
+    'Biotin 40mg Injection Pen Kit | Laboratory Research',
+    '£110.00',
+    array[
+      '40MG',
+      'CAS 58-85-5',
+      'Vitamin B7',
+      'Research Use Only'
+    ],
+    'Biotin Research Injection Pen Kit | Laboratory & In-Vitro Research Only',
+    '/images/biotin-40mg-injection-pen-kit-300.png',
+    '/images/biotin-40mg-injection-pen-kit-600.png',
+    false,
+    '[
+      {
+        "label":"Research Use",
+        "value":"Strictly for laboratory and in-vitro research use."
+      },
+      {
+        "label":"Regulatory Status",
+        "value":"Not a medicine, not for human or veterinary use or consumption, not licensed as a medicine under the Human Medicines Regulations 2012, and not assessed by the MHRA for safety or efficacy as a medicinal product."
+      },
+      {
+        "label":"Compound",
+        "value":"Biotin"
+      },
+      {
+        "label":"Common Names",
+        "value":"Vitamin B7 / Vitamin H"
+      },
+      {
+        "label":"CAS Number",
+        "value":"58-85-5"
+      },
+      {
+        "label":"Molecular Formula",
+        "value":"C10H16N2O3S"
+      },
+      {
+        "label":"Molecular Weight",
+        "value":"244.31 g/mol"
+      },
+      {
+        "label":"Pack Size",
+        "value":"40mg"
+      },
+      {
+        "label":"Product Form",
+        "value":"Injection Pen Kit"
+      },
+      {
+        "label":"Research Context",
+        "value":"Biotin-dependent carboxylases, biochemical metabolism, biotinylation and gene-expression research."
+      },
+      {
+        "label":"Scientific Reference",
+        "value":"León-Del-Río, Journal of Inherited Metabolic Disease, published 19 March 2019. Biotin is described as a water-soluble vitamin and cofactor for biotin-dependent carboxylases."
+      },
+      {
+        "label":"Scientific Reference 2",
+        "value":"Tong, Cell and Molecular Life Sciences, published March 2013. Biotin-dependent carboxylases are involved in fatty-acid, amino-acid and carbohydrate metabolism."
+      },
+      {
+        "label":"Chemical Verification",
+        "value":"Biotin identity can be cross-checked using authoritative chemical databases including PubChem."
+      },
+      {
+        "label":"Purity",
+        "value":"Refer to the applicable batch Certificate of Analysis. No generic purity percentage is substituted for batch-specific results."
+      },
+      {
+        "label":"Batch Testing",
+        "value":"Refer to the applicable batch Certificate of Analysis and analytical documentation."
+      },
+      {
+        "label":"Storage",
+        "value":"Follow the current product label and applicable batch documentation."
+      },
+      {
+        "label":"Shelf Life",
+        "value":"Follow the applicable batch documentation."
+      },
+      {
+        "label":"COA",
+        "value":"Batch-specific Certificate of Analysis should be reviewed against the material received."
+      },
+      {
+        "label":"UK Research Purchasing",
+        "value":"UK research organisations should verify research-use status, documentation and applicable regulatory requirements before purchase."
+      },
+      {
+        "label":"Human Use",
+        "value":"Not for human use, veterinary use or consumption."
+      },
+      {
+        "label":"Compliance Notice",
+        "value":"This product is sold strictly for laboratory and in-vitro research use. It is not a medicine, is not for human or veterinary use or consumption, is not licensed as a medicine under the Human Medicines Regulations 2012, and has not been assessed by the MHRA for safety or efficacy."
+      }
+    ]'::jsonb,
+    'Laboratory Research',
+    'Biotin 40mg Injection Pen Kit contains biotin, also known as vitamin B7, a water-soluble vitamin and cofactor involved in biotin-dependent carboxylase reactions. Biotin has been investigated in biochemical research involving enzyme function, cellular metabolism and gene regulation. This product is supplied strictly for laboratory and in-vitro research use.',
+    'Biotin 40mg Injection Pen Kit for laboratory research, with batch documentation and third-party testing. Shop research-grade Biotin today.'
+  )
 
 on conflict (slug) do update set
   title = excluded.title,
@@ -372,7 +318,9 @@ on conflict (slug) do update set
   image600 = excluded.image600,
   best_seller = excluded.best_seller,
   specs = excluded.specs,
-  category = excluded.category;
+  category = excluded.category,
+  description = excluded.description,
+  meta_description = excluded.meta_description;
 
 
 -- ============================================================
@@ -380,173 +328,173 @@ on conflict (slug) do update set
 -- ============================================================
 
 insert into products (
-  slug,
-  title,
-  price,
-  sizes,
-  form,
-  image300,
-  image600,
-  best_seller,
-  specs,
-  category
-) values
+    slug,
+    title,
+    price,
+    sizes,
+    form,
+    image300,
+    image600,
+    best_seller,
+    specs,
+    category
+  ) values
 
 (
-  'cagri-sema',
-  'Cagri Sema',
-  '£190.00',
-  array[]::text[],
-  'Injection Kit',
-  '/images/cagri-sema-300.png',
-  '/images/cagri-sema-600.png',
-  false,
-  '[{"label":"Form","value":"Injection Kit"}]',
-  'Weight Loss'
-),
+    'cagri-sema',
+    'Cagri Sema',
+    '£190.00',
+    array[]::text[],
+    'Injection Kit',
+    '/images/cagri-sema-300.png',
+    '/images/cagri-sema-600.png',
+    false,
+    '[{"label":"Form","value":"Injection Kit"}]',
+    'Weight Loss'
+  ),
 
 (
-  'glow-skin-112mg',
-  'Glow Skin 112mg',
-  '£120.00',
-  array['112MG'],
-  'Pen Kit',
-  '/images/glow-skin-112mg-300.png',
-  '/images/glow-skin-112mg-600.png',
-  true,
-  '[{"label":"Form","value":"Pen Kit"},{"label":"Pack Size","value":"112mg"}]',
-  'Cosmetic'
-),
+    'glow-skin-112mg',
+    'Glow Skin 112mg',
+    '£120.00',
+    array['112MG'],
+    'Pen Kit',
+    '/images/glow-skin-112mg-300.png',
+    '/images/glow-skin-112mg-600.png',
+    true,
+    '[{"label":"Form","value":"Pen Kit"},{"label":"Pack Size","value":"112mg"}]',
+    'Cosmetic'
+  ),
 
 (
-  'melanotan-2-nasal-spray',
-  'Melanotan 2 Nasal Spray',
-  '£50.00',
-  array['20MG'],
-  'Nasal Spray',
-  '/images/melanotan-2-nasal-spray-300.png',
-  '/images/melanotan-2-nasal-spray-600.png',
-  false,
-  '[{"label":"Form","value":"Nasal Spray"},{"label":"Pack Size","value":"20mg/10ml"}]',
-  'Cosmetic'
-),
+    'melanotan-2-nasal-spray',
+    'Melanotan 2 Nasal Spray',
+    '£50.00',
+    array['20MG'],
+    'Nasal Spray',
+    '/images/melanotan-2-nasal-spray-300.png',
+    '/images/melanotan-2-nasal-spray-600.png',
+    false,
+    '[{"label":"Form","value":"Nasal Spray"},{"label":"Pack Size","value":"20mg/10ml"}]',
+    'Cosmetic'
+  ),
 
 (
-  'nad-b12-synedica',
-  'Synedica NAD+ & B12 Kit',
-  '£145.00',
-  array[]::text[],
-  'Injection Kit',
-  '/images/nad-b12-synedica-300.png',
-  '/images/nad-b12-synedica-600.png',
-  true,
-  '[{"label":"Form","value":"Injection Kit"}]',
-  'Recovery'
-),
+    'nad-b12-synedica',
+    'Synedica NAD+ & B12 Kit',
+    '£145.00',
+    array[]::text[],
+    'Injection Kit',
+    '/images/nad-b12-synedica-300.png',
+    '/images/nad-b12-synedica-600.png',
+    true,
+    '[{"label":"Form","value":"Injection Kit"}]',
+    'Recovery'
+  ),
 
 (
-  'somatotropin-hgh-120iu-injection-pen-kit',
-  'Somatotropin HGH 120iu Injection Pen Kit',
-  '£180.00',
-  array['120IU'],
-  'Injection Pen Kit',
-  '/images/somatotropin-hgh-120iu-injection-pen-kit-300.png',
-  '/images/somatotropin-hgh-120iu-injection-pen-kit-600.png',
-  true,
-  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"120iu"}]',
-  'Recovery'
-),
+    'somatotropin-hgh-120iu-injection-pen-kit',
+    'Somatotropin HGH 120iu Injection Pen Kit',
+    '£180.00',
+    array['120IU'],
+    'Injection Pen Kit',
+    '/images/somatotropin-hgh-120iu-injection-pen-kit-300.png',
+    '/images/somatotropin-hgh-120iu-injection-pen-kit-600.png',
+    true,
+    '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"120iu"}]',
+    'Recovery'
+  ),
 
 (
-  'synedica-bpc-157-tb-500',
-  'Synedica BPC 157 & TB 500',
-  '£120.00',
-  array['40MG'],
-  'Injection Kit',
-  '/images/synedica-bpc-157-tb-500-300.png',
-  '/images/synedica-bpc-157-tb-500-600.png',
-  false,
-  '[{"label":"Blend","value":"BPC-157 + TB-500"},{"label":"Form","value":"Injection Kit"}]',
-  'Recovery'
-),
+    'synedica-bpc-157-tb-500',
+    'Synedica BPC 157 & TB 500',
+    '£120.00',
+    array['40MG'],
+    'Injection Kit',
+    '/images/synedica-bpc-157-tb-500-300.png',
+    '/images/synedica-bpc-157-tb-500-600.png',
+    false,
+    '[{"label":"Blend","value":"BPC-157 + TB-500"},{"label":"Form","value":"Injection Kit"}]',
+    'Recovery'
+  ),
 
 (
-  'synedica-cagrireta-40-mg',
-  'Synedica CagriReta 40mg',
-  '£190.00',
-  array['40MG'],
-  'Lyophilized Powder',
-  '/images/synedica-cagrireta-40-mg-300.png',
-  '/images/synedica-cagrireta-40-mg-600.png',
-  false,
-  '[{"label":"Form","value":"Lyophilized Powder"},{"label":"Pack Size","value":"40mg"}]',
-  'Weight Loss'
-),
+    'synedica-cagrireta-40-mg',
+    'Synedica CagriReta 40mg',
+    '£190.00',
+    array['40MG'],
+    'Lyophilized Powder',
+    '/images/synedica-cagrireta-40-mg-300.png',
+    '/images/synedica-cagrireta-40-mg-600.png',
+    false,
+    '[{"label":"Form","value":"Lyophilized Powder"},{"label":"Pack Size","value":"40mg"}]',
+    'Weight Loss'
+  ),
 
 (
-  'synedica-nad-nmn-1000mg-injection-pen-kit',
-  'Synedica NAD+ & NMN 1000mg Injection Pen Kit',
-  '£120.00',
-  array['1000MG'],
-  'Injection Pen Kit',
-  '/images/synedica-nad-nmn-1000mg-injection-pen-kit-300.png',
-  '/images/synedica-nad-nmn-1000mg-injection-pen-kit-600.png',
-  false,
-  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"1000mg"}]',
-  'Recovery'
-),
+    'synedica-nad-nmn-1000mg-injection-pen-kit',
+    'Synedica NAD+ & NMN 1000mg Injection Pen Kit',
+    '£120.00',
+    array['1000MG'],
+    'Injection Pen Kit',
+    '/images/synedica-nad-nmn-1000mg-injection-pen-kit-300.png',
+    '/images/synedica-nad-nmn-1000mg-injection-pen-kit-600.png',
+    false,
+    '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"1000mg"}]',
+    'Recovery'
+  ),
 
 (
-  'synedica-retatrutide-40mg-injection-kit',
-  'Synedica Retatrutide 40mg Injection Kit',
-  '£130.00',
-  array['40MG'],
-  'Injection Kit',
-  '/images/synedica-retatrutide-40mg-injection-kit-300.png',
-  '/images/synedica-retatrutide-40mg-injection-kit-600.png',
-  true,
-  '[{"label":"Form","value":"Injection Kit"},{"label":"Pack Size","value":"40mg"}]',
-  'Weight Loss'
-),
+    'synedica-retatrutide-40mg-injection-kit',
+    'Synedica Retatrutide 40mg Injection Kit',
+    '£130.00',
+    array['40MG'],
+    'Injection Kit',
+    '/images/synedica-retatrutide-40mg-injection-kit-300.png',
+    '/images/synedica-retatrutide-40mg-injection-kit-600.png',
+    true,
+    '[{"label":"Form","value":"Injection Kit"},{"label":"Pack Size","value":"40mg"}]',
+    'Weight Loss'
+  ),
 
 (
-  'synedica-semaglutide-glp-1-pen-kit',
-  'Synedica Semaglutide GLP-1 Pen Kit',
-  '£160.00',
-  array['8MG'],
-  'Pen Kit',
-  '/images/synedica-semaglutide-glp-1-pen-kit-300.png',
-  '/images/synedica-semaglutide-glp-1-pen-kit-600.png',
-  true,
-  '[{"label":"Form","value":"Pen Kit"},{"label":"Pack Size","value":"8mg"}]',
-  'Weight Loss'
-),
+    'synedica-semaglutide-glp-1-pen-kit',
+    'Synedica Semaglutide GLP-1 Pen Kit',
+    '£160.00',
+    array['8MG'],
+    'Pen Kit',
+    '/images/synedica-semaglutide-glp-1-pen-kit-300.png',
+    '/images/synedica-semaglutide-glp-1-pen-kit-600.png',
+    true,
+    '[{"label":"Form","value":"Pen Kit"},{"label":"Pack Size","value":"8mg"}]',
+    'Weight Loss'
+  ),
 
 (
-  'synedica-tirzepatide-40mg-injection-pen-kit',
-  'Synedica Tirzepatide 40mg Injection Pen Kit',
-  '£199.00',
-  array['40MG'],
-  'Injection Pen Kit',
-  '/images/synedica-tirzepatide-40mg-injection-pen-kit-300.png',
-  '/images/synedica-tirzepatide-40mg-injection-pen-kit-600.png',
-  false,
-  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"40mg"}]',
-  'Weight Loss'
-),
+    'synedica-tirzepatide-40mg-injection-pen-kit',
+    'Synedica Tirzepatide 40mg Injection Pen Kit',
+    '£199.00',
+    array['40MG'],
+    'Injection Pen Kit',
+    '/images/synedica-tirzepatide-40mg-injection-pen-kit-300.png',
+    '/images/synedica-tirzepatide-40mg-injection-pen-kit-600.png',
+    false,
+    '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"40mg"}]',
+    'Weight Loss'
+  ),
 
 (
-  'trt-hcg-injection-pen-kit',
-  'Synedica TRT + HCG Injection Pen Kit',
-  '£200.00',
-  array[]::text[],
-  'Injection Pen Kit',
-  '/images/trt-hcg-injection-pen-kit-300.png',
-  '/images/trt-hcg-injection-pen-kit-600.png',
-  false,
-  '[{"label":"Form","value":"Injection Pen Kit"}]',
-  'Anabolic'
-)
+    'trt-hcg-injection-pen-kit',
+    'Synedica TRT + HCG Injection Pen Kit',
+    '£200.00',
+    array[]::text[],
+    'Injection Pen Kit',
+    '/images/trt-hcg-injection-pen-kit-300.png',
+    '/images/trt-hcg-injection-pen-kit-600.png',
+    false,
+    '[{"label":"Form","value":"Injection Pen Kit"}]',
+    'Anabolic'
+  )
 
 on conflict (slug) do update set
   title = excluded.title,
