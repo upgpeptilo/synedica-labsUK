@@ -66,11 +66,10 @@ create policy "Authenticated users can delete product images"
   to authenticated
   using (bucket_id = 'product-images');
 
--- seed with the real synedica-uk.shop catalog (cloned with the owner's approval).
--- Prices are the base single-unit price - their site prices bulk-quantity variants
--- (e.g. "3 kits", "5 pens") as WooCommerce variations, which this schema doesn't
--- model (no bulk pricing feature exists here yet). Images are their real product
--- photography, downloaded and resized to the site's 300/600 convention.
+-- seed with the Synedica Labs UK research-use product catalogue.
+-- Product information is written for laboratory and in-vitro research use only.
+-- No product is represented as a medicine or as suitable for human or veterinary use.
+
 alter table products add column if not exists variants_label text;
 
 create table if not exists product_variants (
@@ -119,8 +118,6 @@ alter table orders add column if not exists phone text not null default '';
 
 alter table orders enable row level security;
 
--- checkout is unauthenticated. Orders are inserted through place_order() below,
--- which is security definer so the anon role never needs read access to the table.
 drop policy if exists "Anyone can insert orders" on orders;
 
 drop function if exists place_order(text, text, text, text, jsonb, numeric);
@@ -145,7 +142,6 @@ $$;
 
 grant execute on function place_order(text, text, text, text, text, jsonb, numeric) to anon, authenticated;
 
--- only admins (logged in) can view/manage orders
 drop policy if exists "Authenticated users can view orders" on orders;
 create policy "Authenticated users can view orders"
   on orders for select
@@ -164,8 +160,7 @@ create policy "Authenticated users can delete orders"
   to authenticated
   using (true);
 
--- site-wide settings (currently just the WhatsApp contact number).
--- Single row, id fixed to 1 so there's only ever one to read/update.
+-- site-wide settings
 create table if not exists site_settings (
   id int primary key default 1,
   whatsapp_number text not null default '447882524986',
@@ -175,13 +170,11 @@ create table if not exists site_settings (
 
 alter table site_settings enable row level security;
 
--- storefront needs to read it to build wa.me links
 drop policy if exists "Public can view site settings" on site_settings;
 create policy "Public can view site settings"
   on site_settings for select
   using (true);
 
--- only admins can edit it; no insert/delete policy — the row is seeded once below
 drop policy if exists "Authenticated users can update site settings" on site_settings;
 create policy "Authenticated users can update site settings"
   on site_settings for update
@@ -191,31 +184,315 @@ create policy "Authenticated users can update site settings"
 insert into site_settings (id, whatsapp_number) values (1, '447882524986')
 on conflict (id) do nothing;
 
-insert into products (slug, title, price, sizes, form, image300, image600, best_seller, specs, category) values
-('biotin-40mg-injection-pen-kit', 'Biotin 40mg Injection Pen Kit', '£110.00', array['40MG'], 'Injection Pen Kit', '/images/biotin-40mg-injection-pen-kit-300.png', '/images/biotin-40mg-injection-pen-kit-600.png', false,
-  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"40mg"}]', 'Recovery'),
-('cagri-sema', 'Cagri Sema', '£190.00', array[]::text[], 'Injection Kit', '/images/cagri-sema-300.png', '/images/cagri-sema-600.png', false,
-  '[{"label":"Form","value":"Injection Kit"}]', 'Weight Loss'),
-('glow-skin-112mg', 'Glow Skin 112mg', '£120.00', array['112MG'], 'Pen Kit', '/images/glow-skin-112mg-300.png', '/images/glow-skin-112mg-600.png', true,
-  '[{"label":"Form","value":"Pen Kit"},{"label":"Pack Size","value":"112mg"}]', 'Cosmetic'),
-('melanotan-2-nasal-spray', 'Melanotan 2 Nasal Spray', '£50.00', array['20MG'], 'Nasal Spray', '/images/melanotan-2-nasal-spray-300.png', '/images/melanotan-2-nasal-spray-600.png', false,
-  '[{"label":"Form","value":"Nasal Spray"},{"label":"Pack Size","value":"20mg/10ml"}]', 'Cosmetic'),
-('nad-b12-synedica', 'Synedica NAD+ & B12 Kit', '£145.00', array[]::text[], 'Injection Kit', '/images/nad-b12-synedica-300.png', '/images/nad-b12-synedica-600.png', true,
-  '[{"label":"Form","value":"Injection Kit"}]', 'Recovery'),
-('somatotropin-hgh-120iu-injection-pen-kit', 'Somatotropin HGH 120iu Injection Pen Kit', '£180.00', array['120IU'], 'Injection Pen Kit', '/images/somatotropin-hgh-120iu-injection-pen-kit-300.png', '/images/somatotropin-hgh-120iu-injection-pen-kit-600.png', true,
-  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"120iu"}]', 'Recovery'),
-('synedica-bpc-157-tb-500', 'Synedica BPC 157 & TB 500', '£120.00', array['40MG'], 'Injection Kit', '/images/synedica-bpc-157-tb-500-300.png', '/images/synedica-bpc-157-tb-500-600.png', false,
-  '[{"label":"Blend","value":"BPC-157 + TB-500"},{"label":"Form","value":"Injection Kit"}]', 'Recovery'),
-('synedica-cagrireta-40-mg', 'Synedica CagriReta 40mg', '£190.00', array['40MG'], 'Lyophilized Powder', '/images/synedica-cagrireta-40-mg-300.png', '/images/synedica-cagrireta-40-mg-600.png', false,
-  '[{"label":"Form","value":"Lyophilized Powder"},{"label":"Pack Size","value":"40mg"}]', 'Weight Loss'),
-('synedica-nad-nmn-1000mg-injection-pen-kit', 'Synedica NAD+ & NMN 1000mg Injection Pen Kit', '£120.00', array['1000MG'], 'Injection Pen Kit', '/images/synedica-nad-nmn-1000mg-injection-pen-kit-300.png', '/images/synedica-nad-nmn-1000mg-injection-pen-kit-600.png', false,
-  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"1000mg"}]', 'Recovery'),
-('synedica-retatrutide-40mg-injection-kit', 'Synedica Retatrutide 40mg Injection Kit', '£130.00', array['40MG'], 'Injection Kit', '/images/synedica-retatrutide-40mg-injection-kit-300.png', '/images/synedica-retatrutide-40mg-injection-kit-600.png', true,
-  '[{"label":"Form","value":"Injection Kit"},{"label":"Pack Size","value":"40mg"}]', 'Weight Loss'),
-('synedica-semaglutide-glp-1-pen-kit', 'Synedica Semaglutide GLP-1 Pen Kit', '£160.00', array['8MG'], 'Pen Kit', '/images/synedica-semaglutide-glp-1-pen-kit-300.png', '/images/synedica-semaglutide-glp-1-pen-kit-600.png', true,
-  '[{"label":"Form","value":"Pen Kit"},{"label":"Pack Size","value":"8mg"}]', 'Weight Loss'),
-('synedica-tirzepatide-40mg-injection-pen-kit', 'Synedica Tirzepatide 40mg Injection Pen Kit', '£199.00', array['40MG'], 'Injection Pen Kit', '/images/synedica-tirzepatide-40mg-injection-pen-kit-300.png', '/images/synedica-tirzepatide-40mg-injection-pen-kit-600.png', false,
-  '[{"label":"Form","value":"Injection Pen Kit"},{"label":"Pack Size","value":"40mg"}]', 'Weight Loss'),
-('trt-hcg-injection-pen-kit', 'Synedica TRT + HCG Injection Pen Kit', '£200.00', array[]::text[], 'Injection Pen Kit', '/images/trt-hcg-injection-pen-kit-300.png', '/images/trt-hcg-injection-pen-kit-600.png', false,
-  '[{"label":"Form","value":"Injection Pen Kit"}]', 'Anabolic')
-on conflict (slug) do update set category = excluded.category;
+
+-- ============================================================
+-- SEO-OPTIMISED PRODUCT CATALOGUE
+-- Research-use positioning is included in the product specifications.
+-- ============================================================
+
+insert into products (
+  slug,
+  title,
+  price,
+  sizes,
+  form,
+  image300,
+  image600,
+  best_seller,
+  specs,
+  category
+) values
+
+(
+  'biotin-40mg-injection-pen-kit',
+  'Biotin 40mg Injection Pen Kit',
+  '£110.00',
+  array['40MG'],
+  'Injection Pen Kit',
+  '/images/biotin-40mg-injection-pen-kit-300.png',
+  '/images/biotin-40mg-injection-pen-kit-600.png',
+  false,
+  '[
+    {"label":"Research Compound","value":"Biotin"},
+    {"label":"Pack Size","value":"40mg"},
+    {"label":"Form","value":"Injection Pen Kit"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"UK Status","value":"Not a medicine and not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Recovery'
+),
+
+(
+  'cagri-sema',
+  'CagriSema Research Peptide',
+  '£190.00',
+  array[]::text[],
+  'Injection Kit',
+  '/images/cagri-sema-300.png',
+  '/images/cagri-sema-600.png',
+  false,
+  '[
+    {"label":"Research Compound","value":"CagriSema"},
+    {"label":"Form","value":"Injection Kit"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"Research Context","value":"Investigated in scientific research involving metabolic and pharmacological pathways"},
+    {"label":"UK Status","value":"Not a medicine and not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Weight Loss'
+),
+
+(
+  'glow-skin-112mg',
+  'Glow Skin 112mg Research Peptide',
+  '£120.00',
+  array['112MG'],
+  'Pen Kit',
+  '/images/glow-skin-112mg-300.png',
+  '/images/glow-skin-112mg-600.png',
+  true,
+  '[
+    {"label":"Research Product","value":"Glow Skin 112mg"},
+    {"label":"Pack Size","value":"112mg"},
+    {"label":"Form","value":"Pen Kit"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"Research Context","value":"Supplied for controlled laboratory research and analytical investigation"},
+    {"label":"UK Status","value":"Not a medicine and not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Cosmetic'
+),
+
+(
+  'melanotan-2-nasal-spray',
+  'Melanotan 2 20mg Research Nasal Spray',
+  '£50.00',
+  array['20MG'],
+  'Nasal Spray',
+  '/images/melanotan-2-nasal-spray-300.png',
+  '/images/melanotan-2-nasal-spray-600.png',
+  false,
+  '[
+    {"label":"Research Compound","value":"Melanotan 2"},
+    {"label":"Pack Size","value":"20mg / 10ml"},
+    {"label":"Form","value":"Nasal Spray"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"Research Context","value":"Melanocortin-related compound investigated in scientific research"},
+    {"label":"UK Status","value":"Not a medicine and not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Cosmetic'
+),
+
+(
+  'nad-b12-synedica',
+  'Synedica NAD+ & B12 Research Kit',
+  '£145.00',
+  array[]::text[],
+  'Injection Kit',
+  '/images/nad-b12-synedica-300.png',
+  '/images/nad-b12-synedica-600.png',
+  true,
+  '[
+    {"label":"Research Compounds","value":"NAD+ and Vitamin B12"},
+    {"label":"Form","value":"Injection Kit"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"Research Context","value":"Supplied for laboratory investigation of biochemical and cellular research pathways"},
+    {"label":"UK Status","value":"Not a medicine and not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Recovery'
+),
+
+(
+  'somatotropin-hgh-120iu-injection-pen-kit',
+  'Somatotropin HGH 120IU Research Injection Pen Kit',
+  '£180.00',
+  array['120IU'],
+  'Injection Pen Kit',
+  '/images/somatotropin-hgh-120iu-injection-pen-kit-300.png',
+  '/images/somatotropin-hgh-120iu-injection-pen-kit-600.png',
+  true,
+  '[
+    {"label":"Research Compound","value":"Somatotropin / HGH"},
+    {"label":"Pack Size","value":"120IU"},
+    {"label":"Form","value":"Injection Pen Kit"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"Research Context","value":"Growth-hormone-related compound used in laboratory and preclinical research"},
+    {"label":"UK Status","value":"Not a medicine and not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Recovery'
+),
+
+(
+  'synedica-bpc-157-tb-500',
+  'Synedica BPC-157 & TB-500 Research Peptide',
+  '£120.00',
+  array['40MG'],
+  'Injection Kit',
+  '/images/synedica-bpc-157-tb-500-300.png',
+  '/images/synedica-bpc-157-tb-500-600.png',
+  false,
+  '[
+    {"label":"Research Compounds","value":"BPC-157 + TB-500"},
+    {"label":"Pack Size","value":"40mg"},
+    {"label":"Form","value":"Injection Kit"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"Research Context","value":"Peptide compounds investigated in preclinical and laboratory research"},
+    {"label":"UK Status","value":"Not a medicine and not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Recovery'
+),
+
+(
+  'synedica-cagrireta-40-mg',
+  'Synedica CagriReta 40mg Research Peptide',
+  '£190.00',
+  array['40MG'],
+  'Lyophilized Powder',
+  '/images/synedica-cagrireta-40-mg-300.png',
+  '/images/synedica-cagrireta-40-mg-600.png',
+  false,
+  '[
+    {"label":"Research Compound","value":"CagriReta"},
+    {"label":"Pack Size","value":"40mg"},
+    {"label":"Form","value":"Lyophilized Powder"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"Research Context","value":"Investigated in scientific research involving metabolic and pharmacological pathways"},
+    {"label":"UK Status","value":"Not a medicine and not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Weight Loss'
+),
+
+(
+  'synedica-nad-nmn-1000mg-injection-pen-kit',
+  'Synedica NAD+ & NMN 1000mg Research Pen Kit',
+  '£120.00',
+  array['1000MG'],
+  'Injection Pen Kit',
+  '/images/synedica-nad-nmn-1000mg-injection-pen-kit-300.png',
+  '/images/synedica-nad-nmn-1000mg-injection-pen-kit-600.png',
+  false,
+  '[
+    {"label":"Research Compounds","value":"NAD+ and NMN"},
+    {"label":"Pack Size","value":"1000mg"},
+    {"label":"Form","value":"Injection Pen Kit"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"Research Context","value":"Nicotinamide-related compounds investigated in biochemical and cellular research"},
+    {"label":"UK Status","value":"Not a medicine and not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Recovery'
+),
+
+(
+  'synedica-retatrutide-40mg-injection-kit',
+  'Synedica Retatrutide 40mg Research Injection Kit',
+  '£130.00',
+  array['40MG'],
+  'Injection Kit',
+  '/images/synedica-retatrutide-40mg-injection-kit-300.png',
+  '/images/synedica-retatrutide-40mg-injection-kit-600.png',
+  true,
+  '[
+    {"label":"Research Compound","value":"Retatrutide"},
+    {"label":"Pack Size","value":"40mg"},
+    {"label":"Form","value":"Injection Kit"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"Research Context","value":"Investigated in clinical and preclinical research involving metabolic signalling"},
+    {"label":"UK Status","value":"Not a medicine and not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Weight Loss'
+),
+
+(
+  'synedica-semaglutide-glp-1-pen-kit',
+  'Synedica Semaglutide GLP-1 Research Pen Kit',
+  '£160.00',
+  array['8MG'],
+  'Pen Kit',
+  '/images/synedica-semaglutide-glp-1-pen-kit-300.png',
+  '/images/synedica-semaglutide-glp-1-pen-kit-600.png',
+  true,
+  '[
+    {"label":"Research Compound","value":"Semaglutide"},
+    {"label":"Research Classification","value":"GLP-1 receptor agonist"},
+    {"label":"Pack Size","value":"8mg"},
+    {"label":"Form","value":"Pen Kit"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"Research Context","value":"GLP-1-related compound investigated extensively in pharmacological and metabolic research"},
+    {"label":"UK Status","value":"This research product is not a medicine and is not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Weight Loss'
+),
+
+(
+  'synedica-tirzepatide-40mg-injection-pen-kit',
+  'Synedica Tirzepatide 40mg Research Injection Pen Kit',
+  '£199.00',
+  array['40MG'],
+  'Injection Pen Kit',
+  '/images/synedica-tirzepatide-40mg-injection-pen-kit-300.png',
+  '/images/synedica-tirzepatide-40mg-injection-pen-kit-600.png',
+  false,
+  '[
+    {"label":"Research Compound","value":"Tirzepatide"},
+    {"label":"Pack Size","value":"40mg"},
+    {"label":"Form","value":"Injection Pen Kit"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"Research Context","value":"Investigated as a dual GIP and GLP-1 receptor agonist in scientific research"},
+    {"label":"UK Status","value":"This research product is not a medicine and is not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Weight Loss'
+),
+
+(
+  'trt-hcg-injection-pen-kit',
+  'Synedica TRT + HCG Research Injection Pen Kit',
+  '£200.00',
+  array[]::text[],
+  'Injection Pen Kit',
+  '/images/trt-hcg-injection-pen-kit-300.png',
+  '/images/trt-hcg-injection-pen-kit-600.png',
+  false,
+  '[
+    {"label":"Research Compounds","value":"TRT + HCG"},
+    {"label":"Form","value":"Injection Pen Kit"},
+    {"label":"Research Use","value":"Laboratory and in-vitro research use only"},
+    {"label":"Research Context","value":"Supplied for laboratory investigation and analytical research"},
+    {"label":"UK Status","value":"Not a medicine and not licensed under the Human Medicines Regulations 2012"},
+    {"label":"Human Use","value":"Not for human or veterinary use or consumption"},
+    {"label":"Quality Documentation","value":"Batch-specific laboratory documentation should be reviewed before research use"}
+  ]',
+  'Anabolic'
+)
+
+on conflict (slug) do update set
+  title = excluded.title,
+  price = excluded.price,
+  sizes = excluded.sizes,
+  form = excluded.form,
+  image300 = excluded.image300,
+  image600 = excluded.image600,
+  best_seller = excluded.best_seller,
+  specs = excluded.specs,
+  category = excluded.category;
