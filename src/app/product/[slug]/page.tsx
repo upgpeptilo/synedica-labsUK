@@ -154,10 +154,6 @@ export default async function ProductPage({
             </div>
           )}
 
-          {product.description && (
-            <p className="mt-4 text-sm leading-relaxed text-neutral-600">{product.description}</p>
-          )}
-
           <ProductActions product={product} />
 
           <div className="mt-10 space-y-2 border-t border-neutral-200 pt-6">
@@ -175,7 +171,7 @@ export default async function ProductPage({
           </div>
 
           <p className="mt-6 text-xs text-neutral-500">
-            ⚠️ {disclaimerText}{" "}
+            â ï¸ {disclaimerText}{" "}
             <Link href="/termsconditions" className="text-primary-dark underline">
               Terms &amp; Conditions
             </Link>
@@ -227,7 +223,7 @@ export default async function ProductPage({
           </li>
           <li>
             <Link href="/product/nad-b12-synedica" className="text-primary-dark underline">
-              Synedica NAD+ &amp; B12 Kit — a related coenzyme-vitamin research compound
+              Synedica NAD+ &amp; B12 Kit â a related coenzyme-vitamin research compound
             </Link>
           </li>
           <li>
