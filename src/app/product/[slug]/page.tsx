@@ -1,9 +1,50 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { getProduct, storageText, disclaimerText } from "@/lib/products";
+import { firstGbpAmount } from "@/lib/currency";
 import ProductActions from "@/components/ProductActions";
 import RecordRecentlyViewed from "@/components/RecordRecentlyViewed";
+
+// Production domain, confirmed by the site owner. Falls back here if
+// NEXT_PUBLIC_SITE_URL isn't set in the deployment environment.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://synedicalabs-uk.com";
+const SITE_NAME = "Synedica UK";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+  if (!product) return {};
+
+  const title = `${product.title} | ${SITE_NAME}`;
+  const description = product.metaDescription || product.description;
+  const url = `${SITE_URL}/product/${product.slug}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: SITE_NAME,
+      images: [{ url: product.image600 }],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [product.image600],
+    },
+  };
+}
 
 export default async function ProductPage({
   params,
@@ -14,8 +55,28 @@ export default async function ProductPage({
   const product = await getProduct(slug);
   if (!product) notFound();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description: product.metaDescription || product.description,
+    image: product.image600,
+    category: product.category,
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "GBP",
+      price: firstGbpAmount(product.price).toFixed(2),
+      url: `${SITE_URL}/product/${product.slug}`,
+      availability: "https://schema.org/InStock",
+    },
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <RecordRecentlyViewed
         item={{ slug: product.slug, title: product.title, price: product.price, image: product.image300 }}
       />
@@ -33,6 +94,10 @@ export default async function ProductPage({
         />
         <div>
           <h1 className="font-heading text-3xl font-bold text-dark">{product.title}</h1>
+
+          {product.description && (
+            <p className="mt-4 text-sm leading-relaxed text-neutral-600">{product.description}</p>
+          )}
 
           <ProductActions product={product} />
 
