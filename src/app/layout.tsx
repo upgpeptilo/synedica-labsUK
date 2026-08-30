@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   title: "Synedica UK",
   description: "A trusted supplier of premium peptides for scientific research and development.",
   verification: {
-    google: "Xcv8YZ2d0thi7xzPwboYsi28smXbTVwmCcZrbb4bZuI",
+    google: "fiIr-D8oI4HAcdYauAwxjyDAQNEVxlnSwIbZsF31fNQ",
   },
 };
 
