@@ -8,6 +8,8 @@ const links = [
   { href: "/admin", label: "Home" },
   { href: "/admin/products/new", label: "Add Product" },
   { href: "/admin/products", label: "All Products" },
+  { href: "/admin/blog/new", label: "New Blog Post" },
+  { href: "/admin/blog", label: "Blog Posts" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/settings", label: "Settings" },
 ];
@@ -15,6 +17,9 @@ const links = [
 function isActive(pathname: string, href: string) {
   if (href === "/admin") return pathname === "/admin";
   if (href === "/admin/products/new") return pathname === "/admin/products/new";
+  if (href === "/admin/blog/new") return pathname === "/admin/blog/new";
+  if (href === "/admin/blog")
+    return (pathname === "/admin/blog" || pathname.startsWith("/admin/blog/")) && pathname !== "/admin/blog/new";
   if (href === "/admin/orders") return pathname === "/admin/orders" || pathname.startsWith("/admin/orders/");
   if (href === "/admin/settings") return pathname === "/admin/settings";
   return pathname === "/admin/products" || pathname.startsWith("/admin/products/") && !pathname.startsWith("/admin/products/new");
