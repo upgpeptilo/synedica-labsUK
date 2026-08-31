@@ -4,7 +4,15 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
-export default function ImageUploader({ initialUrl }: { initialUrl?: string }) {
+export default function ImageUploader({
+  initialUrl,
+  bucket = "product-images",
+  fieldName = "imageUrl",
+}: {
+  initialUrl?: string;
+  bucket?: string;
+  fieldName?: string;
+}) {
   const [url, setUrl] = useState(initialUrl ?? "");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +25,7 @@ export default function ImageUploader({ initialUrl }: { initialUrl?: string }) {
 
     const supabase = createClient();
     const path = `${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage.from("product-images").upload(path, file);
+    const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file);
 
     if (uploadError) {
       setError(uploadError.message);
@@ -25,14 +33,14 @@ export default function ImageUploader({ initialUrl }: { initialUrl?: string }) {
       return;
     }
 
-    const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     setUrl(data.publicUrl);
     setUploading(false);
   }
 
   return (
     <div>
-      <input type="hidden" name="imageUrl" value={url} />
+      <input type="hidden" name={fieldName} value={url} />
       <input
         ref={inputRef}
         type="file"
