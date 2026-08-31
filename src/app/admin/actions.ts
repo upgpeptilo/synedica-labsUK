@@ -236,3 +236,76 @@ export async function signOut() {
     await supabase.auth.signOut();
     redirect("/admin/login");
 }
+
+function readBlogPostFields(formData: FormData) {
+  const title = String(formData.get("title") ?? "").trim();
+  const excerpt = String(formData.get("excerpt") ?? "").trim();
+  const content = String(formData.get("content") ?? "").trim();
+  const coverImage = String(formData.get("coverImageUrl") ?? "").trim();
+  const published = formData.get("published") === "on";
+
+  return { title, excerpt, content, coverImage, published };
+}
+
+export async function createBlogPost(formData: FormData) {
+  const { title, excerpt, content, coverImage, published } = readBlogPostFields(formData);
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("blog_posts").insert({
+    slug: slugify(title),
+    title,
+    excerpt,
+    content,
+    cover_image: coverImage,
+    published,
+    published_at: published ? new Date().toISOString() : null,
+  });
+
+  if (error) throw error;
+
+  revalidatePath("/admin/blog");
+  revalidatePath("/blog");
+  redirect("/admin/blog");
+}
+
+export async function updateBlogPost(id: string, formData: FormData) {
+  const { title, excerpt, content, coverImage, published } = readBlogPostFields(formData);
+  const supabase = await createClient();
+
+  const { data: existing, error: fetchError } = await supabase
+    .from("blog_posts")
+    .select("slug, published_at")
+    .eq("id", id)
+    .single();
+  if (fetchError) throw fetchError;
+
+  let publishedAt = existing.published_at;
+  if (published && !publishedAt) publishedAt = new Date().toISOString();
+
+  const update: Record<string, unknown> = {
+    title,
+    excerpt,
+    content,
+    published,
+    published_at: publishedAt,
+    updated_at: new Date().toISOString(),
+  };
+  if (coverImage) update.cover_image = coverImage;
+
+  const { error } = await supabase.from("blog_posts").update(update).eq("id", id);
+  if (error) throw error;
+
+  revalidatePath("/admin/blog");
+  revalidatePath("/blog");
+  revalidatePath(`/blog/${existing.slug}`);
+  redirect("/admin/blog");
+}
+
+export async function deleteBlogPost(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("blog_posts").delete().eq("id", id);
+  if (error) throw error;
+
+  revalidatePath("/admin/blog");
+  revalidatePath("/blog");
+}
