@@ -1,10 +1,23 @@
 import Link from "next/link";
 import Image from "next/image";
+import type { Metadata } from "next";
 import { getPublishedPosts } from "@/lib/blog";
 
-export const metadata = {
-  title: "Blog – Synedica UK",
-  description: "News, guides and updates from Synedica UK.",
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://synedicalabs-uk.com";
+const TITLE = "Blog – Synedica UK";
+const DESCRIPTION = "News, guides and updates from Synedica UK.";
+
+export const metadata: Metadata = {
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: `${SITE_URL}/blog` },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: `${SITE_URL}/blog`,
+    siteName: "Synedica UK",
+    type: "website",
+  },
 };
 
 function formatDate(iso: string | null) {
