@@ -32,7 +32,7 @@ function isNumberedListBlock(lines: string[]): boolean {
 }
 
 export function parseBlogContent(content: string): ContentBlock[] {
-  const blocks = content
+  const blocks = content.replace(/\r\n?/g, "\n")
     .split(/\n{2,}/)
     .map((b) => b.trim())
     .filter(Boolean);
