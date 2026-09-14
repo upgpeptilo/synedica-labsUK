@@ -1,4 +1,8 @@
-export const metadata = { title: "Contact – Synedica UK" };
+export const metadata = {
+  title: "Contact – Synedica UK",
+  description:
+    "Get in touch with Synedica UK. Send us a message using the contact form below and our team will be in touch shortly.",
+};
 
 export default function ContactPage() {
   return (
