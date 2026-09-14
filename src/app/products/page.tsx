@@ -4,7 +4,11 @@ import RecentlyViewed from "@/components/RecentlyViewed";
 import { getProducts } from "@/lib/products";
 import { firstGbpAmount } from "@/lib/currency";
 
-export const metadata = { title: "Products – Synedica UK" };
+export const metadata = {
+  title: "Products – Synedica UK",
+  description:
+    "Browse the full Synedica UK range of research peptides and injection pen kits, including Retatrutide, Semaglutide and Tirzepatide. UK-based with fast shipping.",
+};
 
 const sortOptions = [
   { value: "default", label: "Default sorting" },
