@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
@@ -6,6 +7,12 @@ import ReviewsMarquee from "@/components/ReviewsMarquee";
 import AlertBanner from "@/components/AlertBanner";
 import CategoryTabs from "@/components/CategoryTabs";
 import { getProducts } from "@/lib/products";
+
+export const metadata: Metadata = {
+  title: "Synedica UK | Premium Research Peptides & Injection Pen Kits",
+  description:
+    "Synedica UK supplies premium research peptides, including Retatrutide, Tirzepatide and Semaglutide injection pen kits. UK-based in Enfield, London, with fast shipping and a quality guarantee.",
+};
 
 const faqs = [
   {
