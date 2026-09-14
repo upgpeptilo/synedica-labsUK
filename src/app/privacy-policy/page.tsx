@@ -1,4 +1,8 @@
-export const metadata = { title: "Privacy Policy – Synedica UK" };
+export const metadata = {
+  title: "Privacy Policy – Synedica UK",
+  description:
+    "Read the Synedica UK Privacy Policy to learn how we collect, use and protect your personal data in compliance with UK GDPR.",
+};
 
 export default function PrivacyPolicyPage() {
   return (
