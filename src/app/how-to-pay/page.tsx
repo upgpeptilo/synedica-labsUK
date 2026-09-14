@@ -1,7 +1,11 @@
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { getWhatsappNumber } from "@/lib/settings";
 
-export const metadata = { title: "How to Pay – Synedica UK" };
+export const metadata = {
+  title: "How to Pay – Synedica UK",
+  description:
+    "Learn how to pay for your Synedica UK order via secure bank transfer, step by step, including how to confirm payment over WhatsApp.",
+};
 
 const bankSteps = [
   {
