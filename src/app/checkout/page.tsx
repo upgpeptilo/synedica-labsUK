@@ -9,7 +9,6 @@ import { createClient } from "@/lib/supabase/client";
 import { firstGbpAmount, formatGbpAmount } from "@/lib/currency";
 import AddressFields from "@/components/AddressFields";
 import { PAYMENT_METHODS } from "@/lib/paymentMethods";
-import { buildWhatsAppOrderLink, DEFAULT_WHATSAPP_NUMBER } from "@/lib/whatsapp";
 import { placeOrder } from "./actions";
 
 const inputClass =
@@ -46,23 +45,11 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(!!buySlug);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0].id);
-  const [whatsappNumber, setWhatsappNumber] = useState(DEFAULT_WHATSAPP_NUMBER);
+  const [confirmation, setConfirmation] = useState<{ orderNumber: number; emailSent: boolean } | null>(null);
 
   function paymentSummary() {
     return PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label ?? paymentMethod;
   }
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("site_settings")
-      .select("whatsapp_number")
-      .eq("id", 1)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.whatsapp_number) setWhatsappNumber(data.whatsapp_number);
-      });
-  }, []);
 
   useEffect(() => {
     if (!buySlug) return;
@@ -111,11 +98,12 @@ function CheckoutContent() {
 
     setIsSubmitting(true);
     try {
-      const orderNum = await placeOrder({
+      const result = await placeOrder({
         name: `${get("billingFirstName")} ${get("billingLastName")}`.trim(),
         email: get("email"),
         phone: get("phone"),
         address,
+        notes: get("notes"),
         paymentMethod: paymentSummary(),
         items: items.map((i) => ({
           title: i.title,
@@ -126,9 +114,8 @@ function CheckoutContent() {
         })),
         total: subtotal,
       });
-      const whatsappLink = buildWhatsAppOrderLink(items, subtotal, orderNum, whatsappNumber);
+      setConfirmation(result);
       if (!buySlug) clear();
-      window.open(whatsappLink, "_blank", "noopener,noreferrer");
       setIsSubmitting(false);
     } catch {
       alert("Something went wrong placing your order. Please try again.");
@@ -138,6 +125,24 @@ function CheckoutContent() {
 
   if (loading) {
     return <div className="mx-auto max-w-2xl px-4 py-16 text-center text-neutral-500">Loading…</div>;
+  }
+
+  if (confirmation) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center" role="status">
+        <Breadcrumb step="complete" />
+        <h1 className="mt-8 text-2xl font-bold text-primary-dark">Order received</h1>
+        <p className="mt-3 text-neutral-700">Your order reference is #{confirmation.orderNumber}.</p>
+        <p className="mt-3 text-neutral-600">
+          {confirmation.emailSent
+            ? "Your order has been sent to our team by email. We will contact you about payment and delivery."
+            : "Your order is saved, but the email notification could not be delivered. Please email our team with your order reference. Do not place the order again."}
+        </p>
+        <a href="mailto:info@synedicalabs.uk" className="mt-4 inline-block font-semibold text-primary underline">info@synedicalabs.uk</a>
+        <p className="mt-3 text-sm text-neutral-500">Submitting an order does not confirm payment.</p>
+        <Link href="/products" className="mt-6 block font-semibold text-primary-dark underline">Continue browsing</Link>
+      </div>
+    );
   }
 
   if (items.length === 0) {
@@ -253,7 +258,7 @@ function CheckoutContent() {
             disabled={isSubmitting}
             className="mt-5 w-full rounded bg-dark py-3 font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Redirecting…" : "Checkout via WhatsApp"}
+            {isSubmitting ? "Placing order…" : "Place order"}
           </button>
 
           <p className="mt-3 text-xs text-neutral-500">
