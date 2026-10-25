@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { firstGbpAmount, formatGbpAmount } from "@/lib/currency";
 import AddressFields from "@/components/AddressFields";
 import { PAYMENT_METHODS } from "@/lib/paymentMethods";
+import { buildOrderEmailLink } from "@/lib/orderEmailLink";
 import { placeOrder } from "./actions";
 
 const inputClass =
@@ -45,7 +46,7 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(!!buySlug);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0].id);
-  const [confirmation, setConfirmation] = useState<{ orderNumber: number; emailSent: boolean } | null>(null);
+  const [confirmation, setConfirmation] = useState<{ orderNumber: number; emailLink: string } | null>(null);
 
   function paymentSummary() {
     return PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label ?? paymentMethod;
@@ -98,7 +99,7 @@ function CheckoutContent() {
 
     setIsSubmitting(true);
     try {
-      const result = await placeOrder({
+      const orderDetails = {
         name: `${get("billingFirstName")} ${get("billingLastName")}`.trim(),
         email: get("email"),
         phone: get("phone"),
@@ -113,10 +114,13 @@ function CheckoutContent() {
           priceGbp: i.priceGbp,
         })),
         total: subtotal,
-      });
-      setConfirmation(result);
+      };
+      const orderNumber = await placeOrder(orderDetails);
+      const emailLink = buildOrderEmailLink(orderNumber, orderDetails);
+      setConfirmation({ orderNumber, emailLink });
       if (!buySlug) clear();
       setIsSubmitting(false);
+      window.location.assign(emailLink);
     } catch {
       alert("Something went wrong placing your order. Please try again.");
       setIsSubmitting(false);
@@ -131,14 +135,14 @@ function CheckoutContent() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center" role="status">
         <Breadcrumb step="complete" />
-        <h1 className="mt-8 text-2xl font-bold text-primary-dark">Order received</h1>
+        <h1 className="mt-8 text-2xl font-bold text-primary-dark">Complete your order by email</h1>
         <p className="mt-3 text-neutral-700">Your order reference is #{confirmation.orderNumber}.</p>
         <p className="mt-3 text-neutral-600">
-          {confirmation.emailSent
-            ? "Your order has been sent to our team by email. We will contact you about payment and delivery."
-            : "Your order is saved, but the email notification could not be delivered. Please email our team with your order reference. Do not place the order again."}
+          Your order reference has been saved. Your email app should open with the order details filled in.
+          Press Send in your email app to complete your order request. If it did not open, use the button below.
         </p>
-        <a href="mailto:info@synedicalabs.uk" className="mt-4 inline-block font-semibold text-primary underline">info@synedicalabs.uk</a>
+        <a href={confirmation.emailLink} className="mt-4 inline-block rounded bg-primary px-5 py-3 font-semibold text-white">Open email to complete order</a>
+        <p className="mt-3 text-sm text-neutral-600">Send to info@synedicalabs.uk. If no email app is configured, use your webmail and include the order reference above.</p>
         <p className="mt-3 text-sm text-neutral-500">Submitting an order does not confirm payment.</p>
         <Link href="/products" className="mt-6 block font-semibold text-primary-dark underline">Continue browsing</Link>
       </div>
@@ -258,9 +262,10 @@ function CheckoutContent() {
             disabled={isSubmitting}
             className="mt-5 w-full rounded bg-dark py-3 font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Placing order…" : "Place order"}
+            {isSubmitting ? "Preparing email…" : "Checkout via Email"}
           </button>
 
+          <p className="mt-3 text-sm text-neutral-600">Your email app will open with your order details. Press Send to complete your order request.</p>
           <p className="mt-3 text-xs text-neutral-500">
             Your personal data will be used to process your order, support your experience throughout
             this website, and for other purposes described in our{" "}
